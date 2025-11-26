@@ -1,0 +1,4 @@
+run the Install_packanges.py
+cmd command : "py Install_packanges.py"
+Open the system (Server and the POS) Open "runserver_open.bat"
+"close_sever.bat" will close the Server
