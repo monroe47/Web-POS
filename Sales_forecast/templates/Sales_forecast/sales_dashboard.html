@@ -1,0 +1,571 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>Sales Forecast Dashboard</title>
+  
+  <!-- External libs (Chart.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.9/dayjs.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#2563eb;
+      --accent-2:#f59e0b;
+      --success:#10b981;
+      --danger:#ef4444;
+      --glass: rgba(255,255,255,0.72);
+      --radius:12px;
+      --shadow: 0 6px 20px rgba(17,24,39,0.06);
+      --mono: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: var(--mono);
+      background: linear-gradient(180deg,#eef2ff 0%, var(--bg) 100%);
+      color:#111827;
+      -webkit-font-smoothing:antialiased;
+      padding:28px;
+    }
+
+    /* ---------- Container ---------- */
+    .app {
+      max-width:1200px;
+      margin:0 auto;
+      display:flex;
+      gap:20px;
+      align-items:flex-start;
+    }
+
+    /* ---------- Sidebar ---------- */
+    .sidebar {
+      width:280px;
+      position:sticky;
+      top:28px;
+      align-self:flex-start;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    .card {
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:16px;
+      overflow:hidden;
+    }
+
+    .brand {
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .logo {
+      width:44px;height:44px;border-radius:10px;
+      background:linear-gradient(135deg,var(--accent),#7c3aed);
+      display:flex;align-items:center;justify-content:center;color:white;font-weight:700;
+      font-size:18px;
+    }
+    .brand h1{font-size:1.05rem;margin:0}
+    .brand p{margin:0;font-size:0.85rem;color:var(--muted)}
+
+    .muted{color:var(--muted);font-size:0.9rem}
+
+    /* ---------- Main area ---------- */
+    .main {
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    .controls {
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      align-items:center;
+    }
+    
+    .select, .button {
+      border:1px solid #e6eef8;
+      background:var(--card);
+      padding:8px 12px;
+      border-radius:10px;
+      font-size:0.95rem;
+      font-family: var(--mono);
+      transition: all 0.2s ease;
+    }
+    
+    .select {
+      cursor:pointer;
+      min-width:100px;
+      color:#111827;
+    }
+    
+    .select:hover {
+      border-color:#2563eb;
+      background:#f0f7ff;
+    }
+    
+    .select:focus {
+      outline:none;
+      border-color:#2563eb;
+      box-shadow:0 0 0 3px rgba(37,99,235,0.1);
+    }
+    
+    .button {
+      cursor:pointer;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      font-weight:600;
+      white-space:nowrap;
+      user-select:none;
+    }
+    
+    .button:hover {
+      transform:translateY(-2px);
+      box-shadow:0 8px 16px rgba(17,24,39,0.1);
+    }
+    
+    .button:active {
+      transform:translateY(0);
+    }
+    
+    .button.primary {
+      background:linear-gradient(90deg,var(--accent),#4f46e5);
+      color:white;
+      border:none;
+      box-shadow:0 6px 18px rgba(37,99,235,0.12);
+    }
+    
+    .button.primary:hover {
+      box-shadow:0 8px 24px rgba(37,99,235,0.18);
+    }
+    
+    .button.ghost {
+      background:transparent;
+      border:1px dashed #e6eef8;
+      color:#2563eb;
+    }
+    
+    .button.ghost:hover {
+      background:rgba(37,99,235,0.05);
+      border-color:#2563eb;
+    }
+
+    /* KPI Row */
+    .kpis { display:flex; gap:12px; }
+    .kpi {
+      flex:1;
+      padding:14px;
+      border-radius:10px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.9), var(--glass));
+      box-shadow:var(--shadow);
+    }
+    .kpi .num{font-size:1.3rem;font-weight:700;color:#0f172a}
+    .kpi .label{color:var(--muted);font-size:0.9rem}
+
+    /* Chart card */
+    .chart-card { padding:18px; display:flex; flex-direction:column; gap:14px; }
+    canvas { width:100% !important; height:420px !important; }
+
+    /* Tables */
+    table{width:100%;border-collapse:collapse;font-size:0.95rem}
+    th,td{padding:10px 12px;text-align:left}
+    thead th{background:linear-gradient(90deg,var(--accent),#4f46e5);color:white;font-weight:600}
+    tbody tr:nth-child(even){background:#fbfdff}
+    tbody tr:hover{background:#f0f7ff}
+    .small{font-size:0.85rem;color:var(--muted)}
+
+    /* Product list compact */
+    .top-products li{display:flex;justify-content:space-between;padding:8px 6px;border-bottom:1px solid #f1f5f9;transition:background 0.2s ease}
+    .top-products li:hover{background:#f9fafb}
+    .pill{background:#f1f5f9;padding:6px 8px;border-radius:999px;font-weight:600;color:#0f172a}
+
+    /* Footer */
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:0.85rem}
+
+    /* Responsive */
+    @media (max-width:1024px){
+      .sidebar{display:none}
+      .app{padding:0 10px}
+      canvas{height:300px !important}
+    }
+
+    /* Toast */
+    .toast-wrap { position:fixed; right:20px; bottom:20px; display:flex;flex-direction:column; gap:8px; z-index:9999;}
+    .toast { padding:10px 14px; border-radius:10px; color:white; box-shadow:var(--shadow); font-weight:600 }
+    .toast.success{background:var(--success)}
+    .toast.error{background:var(--danger)}
+
+    /* Modal retrain */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:none;align-items:center;justify-content:center;z-index:9998}
+    .modal{background:var(--card);padding:18px;border-radius:12px;width:420px;box-shadow:var(--shadow);max-width:90vw}
+    .modal.show{display:flex}
+    
+    .modal h3{margin-top:0;color:#111827}
+    .modal input[type="number"] {
+      border:1px solid #e6eef8;
+      padding:8px 10px;
+      border-radius:8px;
+      font-family:var(--mono);
+      transition:all 0.2s ease;
+    }
+    .modal input[type="number"]:focus {
+      outline:none;
+      border-color:#2563eb;
+      box-shadow:0 0 0 3px rgba(37,99,235,0.1);
+    }
+
+    .nav_container {
+      position: fixed; 
+      top: 0;
+      left: 0;
+      height: 100%;
+      z-index: 1000;
+    }
+
+    .nav_container input { display: none; }
+
+    .nav_toggle {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        width: 50px;
+        height: 50px;
+        background: #007bff;
+        color: white;
+        border-radius: 50%;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1001;
+        transition: background 0.3s ease;
+        border:none;
+    }
+    .nav_toggle:hover { background: #0056b3; }
+    .nav_container input:checked ~ .nav_toggle { background: #e74c3c; }
+
+    .nav_toggle::before, .nav_toggle::after, .nav_toggle span {
+        content: '';
+        position: absolute;
+        width: 25px;
+        height: 3px;
+        background: white;
+        border-radius: 2px;
+        transition: 0.3s ease;
+    }
+    .nav_toggle::before { transform: translateY(-7px); }
+    .nav_toggle::after { transform: translateY(7px); }
+    .nav_container input:checked ~ .nav_toggle::before { transform: rotate(45deg); top: 23px; }
+    .nav_container input:checked ~ .nav_toggle::after { transform: rotate(-45deg); top: 23px; }
+    .nav_container input:checked ~ .nav_toggle span { transform: scaleX(0); }
+
+    .nav_menu {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 220px;
+        background: #2c3e50;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+        transform: translateX(-100%);
+        transition: transform 0.4s ease-out;
+        padding-top: 80px;
+        display: flex;
+        flex-direction: column;
+    }
+    .nav_container input:checked ~ .nav_menu { transform: translateX(0); }
+
+    .nav_link {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        color: white;
+        font-size: 1rem;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        opacity: 0.8;
+        transition: background 0.2s ease, opacity 0.2s ease;
+    }
+    .nav_link:hover {
+        background: #34495e;
+        opacity: 1;
+    }
+    .nav_link .nav_icon {
+        margin-right: 15px;
+        font-size: 1.2rem;
+    }
+
+  </style>
+</head>
+<body>
+  <header style="max-width:1200px;margin: 0 auto 20px;display:flex;justify-content:space-between;align-items:center;">
+    <div class="brand">
+      <div class="logo">SF</div>
+      <div>
+        <h1>Sales Forecast</h1>
+        <p class="muted">Accurate daily forecasts using ARIMA — actionable insights for restock and planning.</p>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;">
+      <div class="small muted">Model: <strong>{{ model_info.name|default:"ARIMA (SARIMAX)" }}</strong></div>
+      <button id="open-sidebar" class="button ghost" title="Toggle filters">Filters</button>
+      <a href="{% url 'sales_forecast:export_sales_dashboard_to_excel' %}" class="button primary" style="background-color:#10b981;" title="Export Sales Data to Excel">Export Excel</a>
+    </div>
+  </header>
+
+  <main class="app" role="main">
+    <!-- MAIN CONTENT -->
+    <section class="main">
+      <div class="card controls">
+        <form id="controlsForm" class="controls" onsubmit="return false;">
+          <label class="small muted">View
+            <select id="viewMode" class="select" aria-label="View mode">
+              <option value="daily">Daily</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </label>
+
+          <label class="small muted">Horizon
+            <select id="horizon" class="select" aria-label="Forecast horizon">
+              {% for h in horizon_options %}<option value="{{ h }}">{{ h }} days</option>{% endfor %}
+            </select>
+          </label>
+
+          <label class="small muted">Product
+            <select id="productSelect" class="select" aria-label="Product filter">
+              <option value="">All products</option>
+              {% for p in products %}
+                <option value="{{ p.id }}">{{ p.name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <button id="refreshBtn" class="button primary" title="Refresh data">Refresh</button>
+          <button id="retrainBtn" class="button" title="Retrain model">Retrain Model</button>
+        </form>
+      </div>
+
+      <div class="card chart-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <h2 style="margin:0;font-size:1.1rem">Sales — Historical vs Forecast</h2>
+            <div class="small muted">Showing last 30 days and next <span id="horizonBadge">7</span> days forecast</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <div class="small muted">Smooth</div>
+            <input id="smoothToggle" type="checkbox" checked aria-label="Smooth chart" />
+          </div>
+        </div>
+
+        <canvas id="salesChart" aria-label="Sales chart" role="img"></canvas>
+
+        <div class="kpis" style="margin-top:6px;">
+          <div class="kpi">
+            <div class="label">Today's Sales</div>
+            <div class="num" id="kpiToday">₱0</div>
+            <div class="small muted">Latest known</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Next Day Forecast</div>
+            <div class="num" id="kpiNext">₱0</div>
+            <div class="small muted">Model prediction</div>
+          </div>
+          <div class="kpi">
+            <div class="label">7-day Change</div>
+            <div class="num" id="kpiChange">0%</div>
+            <div class="small muted">Average change vs last 7 days</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 12px 0">Forecast Details</h3>
+        <table aria-describedby="Forecast details table">
+          <thead>
+            <tr><th>Date</th><th>Predicted</th><th>to Restock</th><th>Action</th></tr>
+          </thead>
+          <tbody id="forecastBody">
+            <tr><td colspan="4" class="small muted">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 12px 0">Recent Sales (Last 14 days)</h3>
+        <table>
+          <thead><tr><th>Date</th><th>Total Sales</th><th>Trend</th></tr></thead>
+          <tbody id="recentBody"><tr><td colspan="3" class="small muted">Loading...</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- ✅ NEW: Daily Sales Details Modal -->
+      <div id="dailySalesModal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;align-items:center;justify-content:center;">
+        <div class="modal" style="background:white;border-radius:12px;width:90%;max-width:700px;max-height:85vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.2);padding:0;">
+          <!-- Modal Header -->
+          <div style="padding:20px;border-bottom:1px solid #e0e0e0;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,#2563eb,#4f46e5);color:white;">
+            <div>
+              <h2 style="margin:0;font-size:1.3rem;" id="modalDateTitle">Sales Details</h2>
+              <p style="margin:4px 0 0 0;font-size:0.9rem;opacity:0.9;" id="modalDateFormatted"></p>
+            </div>
+            <button onclick="closeDailySalesModal()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;">✕</button>
+          </div>
+
+          <!-- Modal Body -->
+          <div style="padding:20px;">
+            <!-- Products Table -->
+            <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:0.95rem;">
+              <thead>
+                <tr style="background:#f3f4f6;border-bottom:2px solid #e0e0e0;">
+                  <th style="padding:12px;text-align:left;font-weight:600;color:#333;">Product</th>
+                  <th style="padding:12px;text-align:center;font-weight:600;color:#333;">Qty</th>
+                  <th style="padding:12px;text-align:right;font-weight:600;color:#333;">Unit Price</th>
+                  <th style="padding:12px;text-align:right;font-weight:600;color:#333;">Total</th>
+                </tr>
+              </thead>
+              <tbody id="modalProductsTable">
+                <tr><td colspan="4" style="padding:12px;text-align:center;color:#999;">Loading...</td></tr>
+              </tbody>
+            </table>
+
+            <!-- Summary Stats -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+              <div style="background:#f9fafb;padding:12px;border-radius:8px;border-left:4px solid #2563eb;">
+                <div style="font-size:0.85rem;color:#666;margin-bottom:4px;">Total Items Sold</div>
+                <div style="font-size:1.5rem;font-weight:700;color:#0f172a;" id="modalTotalItems">0</div>
+              </div>
+              <div style="background:#f9fafb;padding:12px;border-radius:8px;border-left:4px solid #10b981;">
+                <div style="font-size:0.85rem;color:#666;margin-bottom:4px;">Unique Products</div>
+                <div style="font-size:1.5rem;font-weight:700;color:#0f172a;" id="modalUniqueProducts">0</div>
+              </div>
+            </div>
+
+            <!-- Grand Total -->
+            <div style="background:linear-gradient(90deg,#2563eb,#4f46e5);color:white;padding:16px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:1.1rem;font-weight:600;">Grand Total Sales</span>
+              <span style="font-size:1.8rem;font-weight:700;" id="modalGrandTotal">₱0.00</span>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div style="padding:16px;border-top:1px solid #e0e0e0;display:flex;justify-content:flex-end;gap:8px;background:#f9fafb;">
+            <button onclick="closeDailySalesModal()" style="background:#6b7280;color:white;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        © {{ now|date:"Y" }} Sales Forecast • Built with ARIMA & Django
+      </footer>
+    </section>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" aria-labelledby="sidebarTitle">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="small muted">Model</div>
+            <strong>{{ model_info.name|default:"ARIMA (SARIMAX)" }}</strong>
+            <div class="small muted">Trained on {{ model_info.trained_on|date:"Y-m-d" }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4 style="margin:0 0 8px 0">Top Products (7d)</h4>
+        <ul class="top-products" id="topProducts" style="list-style:none;padding:0;margin:0;">
+          {% for p in top_products %}
+            <li>
+              <div style="display:flex;gap:8px;align-items:center">
+                <div style="width:36px;height:36px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-weight:700">{{ forloop.counter }}</div>
+                <div>
+                  <div style="font-weight:700">{{ p.name }}</div>
+                  <div class="small muted">₱{{ p.revenue|floatformat:0 }} • {{ p.qty_sold }} sold</div>
+                </div>
+              </div>
+              <div class="pill">₱{{ p.revenue|floatformat:0 }}</div>
+            </li>
+          {% empty %}
+            <li class="small muted">No product data available.</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4 style="margin:0 0 8px 0">Quick Actions</h4>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button id="btnRetrainSidebar" class="button">Retrain Now</button>
+          <button id="btnShowModelRuns" class="button">View Model Runs</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Toasts -->
+  <div class="toast-wrap" id="toasts" aria-live="polite"></div>
+
+  {# Expose model_info to the client safely as JSON for the "View Model Runs" button #}
+  {% if model_info %}
+    {{ model_info|json_script:"sf_model_info" }}
+  {% else %}
+    <script id="sf_model_info" type="application/json">{}</script>
+  {% endif %}
+
+  <!-- Modal for retrain -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal">
+      <h3 style="margin-top:0">Retrain Forecast Model</h3>
+      <p class="small muted">This will train the model using the latest available sales data. It may take a few minutes depending on data volume.</p>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+        <label class="small muted">History (days)</label>
+        <input id="retrainDays" type="number" min="30" max="1825" value="365" class="select" style="width:110px"/>
+        <label class="small muted">Horizon</label>
+        <input id="retrainHorizon" type="number" min="1" max="30" value="7" class="select" style="width:80px"/>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+        <button id="cancelRetrain" class="button">Cancel</button>
+        <button id="confirmRetrain" class="button primary">Start Retrain</button>
+      </div>
+    </div>
+  </div>
+
+<!-- ========== NAV STRUCTURE ========== -->
+{% if user.is_authenticated %}
+{% include 'account_management/molecules/nav_bar.html' %}
+{% endif %}
+
+
+  <!-- Load dashboard script (placed at end so DOM is ready) -->
+  <script src="{% static 'Sales_forecast/js/Sales_dashboard.js' %}"></script>
+
+  <!-- ✅ NEW: Demo Mode Script -->
+  <script>
+    // Check if demo mode is active
+    const demoMode = {{ demo_mode|lower }} === true;
+    const modelStatus = document.querySelector('[data-model-status]');
+    
+    if (demoMode && modelStatus) {
+      modelStatus.innerHTML += '<br><span style="color: #ff9800; font-weight: bold;">📊 Demo Mode Active</span>';
+    }
+
+    // Add demo parameter to API calls
+    if (demoMode) {
+      window.DEMO_MODE = true;
+      console.log('📊 Running in Demo Mode - Showing realistic mock forecasts');
+    }
+  </script>
+</body>
+</html>

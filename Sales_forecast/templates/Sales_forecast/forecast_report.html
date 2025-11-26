@@ -1,0 +1,131 @@
+
+{% extends 'base.html' %} {% load static %}
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forecast Report</title>
+    <link rel="stylesheet" href="{% static 'Sales_forecast/css/sales_dashboard.css' %}"> <!-- Assuming a general CSS for styling -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .report-info {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #555;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .no-data {
+            text-align: center;
+            color: #666;
+            margin-top: 30px;
+        }
+        .excel-download {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .excel-download button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .excel-download button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sales Forecast Report</h1>
+
+        {% if latest_run %}
+            <div class="report-info">
+                <p>Latest Forecast Run: Model <strong>{{ latest_run.model_name }}</strong> trained on data from <strong>{{ latest_run.train_start|date:"M d, Y" }}</strong> to <strong>{{ latest_run.train_end|date:"M d, Y" }}</strong>. Forecast Horizon: <strong>{{ latest_run.horizon }} days</strong>.</p>
+                <p>Generated on: {{ latest_run.created_at|date:"M d, Y H:i" }}</p>
+            </div>
+        {% else %}
+            <div class="report-info">
+                <p>No forecast runs found.</p>
+            </div>
+        {% endif %}
+
+        {% if forecast_data %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Product to Restock</th>
+                    <th>Predicted Units</th>
+                    <th>Estimated Revenue</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in forecast_data %}
+                <tr>
+                    <td>{{ data.date|date:"M d, Y" }}</td>
+                    <td>{{ data.product_name }}</td>
+                    <td>{{ data.predicted_units }}</td>
+                    <td>
+                        {% if data.total_revenue is not None %}
+                            ₱{{ data.total_revenue|floatformat:2 }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="excel-download">
+            <button onclick="downloadExcel()">Download as Excel</button>
+        </div>
+        {% else %}
+        <p class="no-data">No forecast data available.</p>
+        {% endif %}
+    </div>
+
+    <script>
+        function downloadExcel() {
+            window.location.href = `?excel=true`;
+        }
+    </script>
+</body>
+</html>
