@@ -1,0 +1,111 @@
+body {
+    background: #f3f4f6;
+    font-family: 'Segoe UI', sans-serif;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 20px;
+    width: 95%;
+    max-width: 1200px;
+}
+
+.panel {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.create-account {
+    grid-row: span 2;
+}
+
+.create-account input, .create-account select {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn-create {
+    background: royalblue;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-reset, .btn-export {
+    background: #ddd;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.account-list table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.account-list th, .account-list td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.account-list tr:hover {
+    background: #f8f8f8;
+    cursor: pointer;
+}
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.btn-delete {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.recent-logs .log-item {
+    display: flex;
+    justify-content: space-between;
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.log-type {
+    text-decoration: none;
+    font-size: 0.9em;
+}
+
+.log-type.add { color: green; }
+.log-type.delete { color: red; }
+.log-type.edit { color: orange; }
+.log-type.pos { color: blue; }
+.log-type.logout { color: gray; }

@@ -1,0 +1,395 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Account Management — Sky Glow Store (White Theme)</title>
+  <link rel="stylesheet" href="{% static 'css/account_management.css' %}">
+
+  <style>
+    :root{
+      --bg:#ffffff; --muted:#666; --accent:#0b5fff; --surface:#f7f8fb;
+      --card:#ffffff; --border:#e6e9ef; --danger:#e74c3c; --success:#2ecc71;
+      --glass: rgba(11,95,255,0.06);
+      --radius:10px; --shadow: 0 6px 18px rgba(36,50,80,0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{ height:100%; margin:0; background:linear-gradient(180deg,var(--surface),#fff 30%); color:#111; }
+    .wrap{ max-width:1200px; margin:32px auto; padding:28px; }
+    header{ display:flex; align-items:center; gap:16px; margin-bottom:20px; }
+    .logo{ width:56px; height:56px; border-radius:12px; background:var(--glass); display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--accent); }
+    h1{ font-size:20px; margin:0; }
+    p.lead{ margin:0; color:var(--muted); font-size:13px; }
+
+    .grid{ display:grid; grid-template-columns: 380px 1fr; gap:20px; align-items:start; }
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); }
+    form .field{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+    label{ font-size:13px; color:#222; }
+    input[type="text"], input[type="password"], select{
+      padding:10px 12px; border:1px solid #dfe6ef; border-radius:8px; font-size:14px; background:#fff;
+    }
+    .muted{ color:var(--muted); font-size:13px; }
+    .actions{ display:flex; gap:8px; margin-top:10px; }
+    button{ padding:10px 12px; border-radius:8px; border:0; cursor:pointer; font-weight:600; font-size:14px; }
+    .btn-primary{ background:var(--accent); color:#fff; }
+    .btn-ghost{ background:transparent; border:1px solid var(--border); color:#111; }
+    .btn-danger{ background:var(--danger); color:#fff; }
+    .table-wrap{ overflow:auto; }
+    table{ width:100%; border-collapse:collapse; font-size:14px; }
+    th,td{ text-align:left; padding:12px 10px; border-bottom:1px solid var(--border); }
+    th{ color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.02em; }
+    tr:hover{ background:linear-gradient(90deg,#fbfdff,#fff); cursor:pointer; }
+    .role-badge{ display:inline-block; padding:6px 8px; font-size:12px; border-radius:999px; background:#f1f6ff; color:var(--accent); border:1px solid rgba(11,95,255,0.12); }
+    .topbar{ display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:12px; }
+    .search{ display:flex; gap:8px; align-items:center; }
+    input[type="search"]{ padding:8px 10px; border-radius:8px; border:1px solid var(--border); width:260px; }
+    .small{ font-size:13px; color:var(--muted); }
+    .activity-panel{ margin-top:12px; display:flex; gap:12px; }
+    .activity-list{ flex:1; min-height:220px; max-height:420px; overflow:auto; padding:10px; border-radius:10px; border:1px solid var(--border); background:#fbfdff; }
+    .act{ padding:10px; border-radius:8px; margin-bottom:10px; background:#fff; display:flex; justify-content:space-between; gap:12px; align-items:center; box-shadow: 0 2px 8px rgba(16,24,40,0.03); }
+    .act .meta{ color:var(--muted); font-size:13px; }
+    .act .what{ font-weight:600; color:#111; font-size:14px; }
+    .pill{ font-size:12px; padding:6px 8px; border-radius:999px; background:#f3f7f9; border:1px solid #eef3f7; color:#0b5fff; }
+    @media (max-width:900px){ .grid{ grid-template-columns: 1fr; } input[type="search"]{ width:160px; } }
+
+    tr.active {
+  background: linear-gradient(90deg, #e8f1ff 0%, #ffffff 100%);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+    /* Optional basic spinner + highlight styling */
+    .account-row.active {
+      background-color: #e3f2fd;
+      transition: background-color 0.3s ease;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid #ccc;
+      border-top: 3px solid #2196F3;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .act {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    .nav_container {
+      position: fixed; 
+      top: 0;
+      left: 0;
+      height: 100%;
+      z-index: 1000;
+  }
+
+  .nav_container input { display: none; }
+
+  .nav_toggle {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 50px;
+      height: 50px;
+      background: #007bff;
+      color: white;
+      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1001;
+      transition: background 0.3s ease;
+  }
+  .nav_toggle:hover { background: #0056b3; }
+  .nav_container input:checked ~ .nav_toggle { background: #e74c3c; }
+
+  .nav_toggle::before, .nav_toggle::after, .nav_toggle span {
+      content: '';
+      position: absolute;
+      width: 25px;
+      height: 3px;
+      background: white;
+      border-radius: 2px;
+      transition: 0.3s ease;
+  }
+  .nav_toggle::before { transform: translateY(-7px); }
+  .nav_toggle::after { transform: translateY(7px); }
+  .nav_container input:checked ~ .nav_toggle::before { transform: rotate(45deg); top: 23px; }
+  .nav_container input:checked ~ .nav_toggle::after { transform: rotate(-45deg); top: 23px; }
+  .nav_container input:checked ~ .nav_toggle span { transform: scaleX(0); }
+
+  .nav_menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 220px;
+      background: #2c3e50;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+      transform: translateX(-100%);
+      transition: transform 0.4s ease-out;
+      padding-top: 80px;
+      display: flex;
+      flex-direction: column;
+  }
+  .nav_container input:checked ~ .nav_menu { transform: translateX(0); }
+
+  .nav_link {
+      display: flex;
+      align-items: center;
+      padding: 15px 20px;
+      color: white;
+      font-size: 1rem;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      opacity: 0.8;
+      transition: background 0.2s ease, opacity 0.2s ease;
+  }
+  .nav_link:hover {
+      background: #34495e;
+      opacity: 1;
+  }
+  .nav_link .nav_icon {
+      margin-right: 15px;
+      font-size: 1.2rem;
+  }
+
+  </style>
+  <style>
+    /* Component classes for molecules */
+    .delete-form { display: none; margin-top: 20px; }
+    .delete-box { padding: 15px; background: #fff3f3; border: 1px solid #ffcccc; border-radius: 8px; }
+    .danger-title { color: #b30000; margin-bottom: 10px; }
+    .danger-desc { margin-bottom: 10px; }
+    /* reuse existing button classes where possible */
+    .btn-danger { background: var(--danger); color: #fff; padding: 8px 14px; border-radius: 6px; border: 0; cursor: pointer; }
+    /* small molecule specific rules */
+    .molecule-search { display:flex; gap:8px; align-items:center; }
+    .molecule-search input[type="search"]{ padding:8px 10px; border-radius:8px; border:1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <div class="wrap" role="main">
+    <section class="grid" aria-labelledby="create-heading">
+
+      {% include 'account_management/organisms/create_account_panel.html' %}
+
+      <!-- ACCOUNT LIST PANEL -->
+      {% include 'account_management/organisms/accounts_and_activity.html' %}
+
+
+<!-- ========== NAV STRUCTURE ========== -->
+{% if user.is_authenticated %}
+{% include 'account_management/molecules/nav_bar.html' %}
+{% endif %}
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const rows = document.querySelectorAll(".account-row");
+  const activityList = document.getElementById("activityList");
+  const selectedUserIdInput = document.getElementById("selectedUserId");
+  const deleteForm = document.getElementById("deleteAccountForm");
+
+  // --- Clear Highlights ---
+  function clearHighlights() {
+    rows.forEach(r => r.classList.remove("active"));
+  }
+
+  // --- Fetch Logs Function ---
+  function loadUserLogs(userId) {
+    activityList.innerHTML = `<div class="muted" style="padding:12px;">Loading logs...</div>`;
+    fetch(`/accounts/logs/${userId}/`, {
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (!data.logs || data.logs.length === 0) {
+        activityList.innerHTML = `<div class="muted" style="padding:12px;">No logs found.</div>`;
+        return;
+      }
+
+      activityList.innerHTML = "";
+      data.logs.forEach(log => {
+        const div = document.createElement("div");
+        div.className = "act";
+        div.innerHTML = `
+          <div class="what">${log.action_display}</div>
+          <div class="meta">${log.timestamp}</div>
+          ${log.description ? `<div class="desc">${log.description}</div>` : ""}
+        `;
+        activityList.appendChild(div);
+      });
+    })
+    .catch(err => {
+      console.error("Error fetching logs:", err);
+      activityList.innerHTML = `<div class="muted" style="padding:12px;">Failed to load logs.</div>`;
+    });
+  }
+
+  // --- Row Click Event ---
+  rows.forEach(row => {
+    row.addEventListener("click", () => {
+      clearHighlights();
+      row.classList.add("active");
+
+      const userId = row.dataset.userId;
+      selectedUserIdInput.value = userId;
+      deleteForm.style.display = "block";
+
+      loadUserLogs(userId);
+    });
+  });
+
+  // --- Delete Function ---
+  window.confirmDelete = function(userId, username) {
+    const confirmed = confirm(`Are you sure you want to delete the account "${username}"?`);
+    if (!confirmed) return;
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    fetch(`/accounts/delete/${userId}/`, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrfToken,
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      alert(data.message);
+
+      if (data.success) {
+        // Remove deleted user row
+        const deletedRow = document.querySelector(`.account-row[data-user-id="${userId}"]`);
+        if (deletedRow) deletedRow.remove();
+
+        // Clear the logs and hide delete form
+        activityList.innerHTML = `<div class="muted" style="padding:12px;">Select a user to view logs.</div>`;
+        deleteForm.style.display = "none";
+        selectedUserIdInput.value = "";
+      }
+    })
+    .catch(error => {
+      console.error("Error deleting account:", error);
+      alert("An error occurred while deleting the account.");
+    });
+  };
+});
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const deleteForm = document.getElementById("deleteAccountForm");
+  const userIdInput = document.getElementById("selectedUserId");
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  // ✅ When delete form is submitted
+  deleteForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    const userId = userIdInput.value;
+
+    if (!userId) {
+      alert("Please select a user first.");
+      return;
+    }
+
+    if (!confirm("Are you sure you want to permanently delete this account?")) return;
+
+    // Show loading state
+    const deleteBtn = document.getElementById("deleteButton");
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = "Deleting...";
+
+    // 🔥 Send request to Django delete view
+    fetch(`/accounts/delete/${userId}/`, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrfToken,
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    })
+      .then(response => response.json())
+      .then(data => {
+        alert(data.message);
+
+        if (data.success) {
+          // Remove the deleted user's row from table
+          const deletedRow = document.querySelector(`.account-row[data-user-id="${userId}"]`);
+          if (deletedRow) deletedRow.remove();
+
+          // Reset form
+          deleteForm.style.display = "none";
+          userIdInput.value = "";
+        }
+      })
+      .catch(error => {
+        console.error("Delete error:", error);
+        alert("An error occurred while deleting the account.");
+      })
+      .finally(() => {
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = "🗑️ Delete Account";
+      });
+  });
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+
+  // View Logs
+  document.querySelectorAll(".view-logs-btn").forEach(button => {
+    button.addEventListener("click", () => {
+      const userId = button.dataset.userId;
+      fetch(`/account_management/user_logs/${userId}/`, {
+        method: "GET",
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+      })
+        .then(response => response.json())
+        .then(data => {
+          const activityList = document.getElementById("activityList");
+          activityList.innerHTML = "";
+          if (data.logs && data.logs.length > 0) {
+            data.logs.forEach(log => {
+              const li = document.createElement("li");
+              li.className = "list-group-item";
+              li.textContent = `${log.timestamp} — ${log.action_display} (${log.description || "No details"})`;
+              activityList.appendChild(li);
+            });
+          } else {
+            activityList.innerHTML = "<li class='list-group-item text-muted'>No activity logs found.</li>";
+          }
+        })
+        .catch(error => {
+          console.error("Error loading logs:", error);
+          alert("Failed to load activity logs.");
+        });
+    });
+  });
+
+  // Delete account (optional — reuse your delete logic)
+});
+</script>
+
+
+</body>
+</html>
+

@@ -1,0 +1,111 @@
+<!-- Intro screen fragment: Sky Glow opening animation -->
+<style>
+    /* Intro styles (kept scoped to intro screen) */
+    /* Keep body class for compatibility with other templates (e.g. POS) but avoid relying on it for internal layout */
+    body.intro-active { overflow: hidden; }
+
+    /* Root wrapper (keep id for external selectors) */
+    #intro-screen-wrap { position: fixed; top:0;right:0;bottom:0;left:0; display:flex; align-items:center; justify-content:center; z-index:99999; background: linear-gradient(180deg,#008DDA,#006bb3); }
+    #intro-screen { max-width:900px; width:calc(100% - 48px); text-align:center; padding:28px; border-radius:16px; background:rgba(255,255,255,0.06); /* graceful fallback when backdrop-filter isn't supported */ }
+    /* Apply backdrop filter only when supported */
+    @supports ((-webkit-backdrop-filter: blur(6px)) or (backdrop-filter: blur(6px))) {
+        #intro-screen { -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+    }
+
+    #logo-text { color: white; text-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(0,221,255,0.6); opacity:0; transform:scale(.8); transition: all 1s ease-in-out; animation: pulse-glow 1.5s infinite alternate; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+    @keyframes pulse-glow { 0% { text-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(0,221,255,0.6);} 100% { text-shadow: 0 0 15px rgba(255,255,255,1), 0 0 30px rgba(0,221,255,0.8);} }
+
+    /* Scoped bubble style; absolute children are relative to #bubbles-container */
+    #bubbles-container .bubble { position:absolute; width:30px; height:30px; background: rgba(255,255,255,0.08); border-radius:50%; pointer-events:none; box-shadow: 0 0 5px rgba(255,255,255,0.35), inset 0 0 5px rgba(255,255,255,0.12); animation: float 10s infinite linear; }
+    @keyframes float { 0% { transform: translateY(100vh) scale(0); opacity: 0; } 50% { opacity:0.5 } 100% { transform: translateY(-10vh) scale(1.2); opacity:0; } }
+
+    #subtitle-text { color:#eaf6ff; opacity:0; transform:translateY(20px); transition: all .8s ease-out 1.2s; }
+    #loading-container { opacity:0; transition: opacity .5s ease; }
+    #loading-bar { width:0%; height:8px; background:linear-gradient(90deg,#34d7ff,#00bcd4); border-radius:8px; transition: width 2s linear 2s; }
+
+    /* Ensure intro wrapper doesn't create horizontal scroll when bubbles are positioned near edges */
+    #bubbles-container { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+</style>
+
+<div id="intro-screen-wrap" aria-hidden="false" class="skyglow-intro-root">
+    <div id="bubbles-container" aria-hidden="true"></div>
+    <div id="intro-screen" role="dialog" aria-modal="true" aria-labelledby="logo-text">
+        <h1 id="logo-text" class="text-6xl font-black uppercase tracking-wider" style="font-size:48px;margin:0;">SKY GLOW</h1>
+        <p id="subtitle-text" style="margin-top:12px;font-size:18px;font-weight:300;">POS & Sales Forecasting System</p>
+        <div id="loading-container" style="margin-top:22px; width:320px; margin-left:auto; margin-right:auto;">
+            <p style="color:#eaf6ff;font-size:13px;margin-bottom:8px;">Initializing Modules...</p>
+            <div style="height:10px;background:rgba(255,255,255,0.12);border-radius:8px;overflow:hidden;">
+                <div id="loading-bar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    // keep state to avoid re-running on partial navigations
+    if (window["__skyglow_intro_ran"]) return; window["__skyglow_intro_ran"] = true;
+
+    const bubblesContainer = document.getElementById('bubbles-container');
+    // Use a document fragment for performance when creating many nodes
+    const frag = document.createDocumentFragment();
+    const bubbleCount = 18;
+    if (bubblesContainer) {
+        for (let i=0;i<bubbleCount;i++){
+            const b = document.createElement('div'); b.className='bubble';
+            const size = Math.random()*50+20; const duration = Math.random()*8+7; const delay = Math.random()*5;
+            b.style.width = b.style.height = size+'px';
+            // Use percent-based horizontal placement (avoids horizontal overflow from vw)
+            b.style.left = (Math.random()*100)+'%';
+            b.style.top = (40 + Math.random()*60)+'%'; // start around lower area for nicer float-in
+            b.style.animationDuration = duration+'s';
+            b.style.animationDelay = '-'+delay+'s';
+            frag.appendChild(b);
+        }
+        bubblesContainer.appendChild(frag);
+    }
+
+    const logo = document.getElementById('logo-text');
+    const subtitle = document.getElementById('subtitle-text');
+    const loadingContainer = document.getElementById('loading-container');
+    const loadingBar = document.getElementById('loading-bar');
+    const wrap = document.getElementById('intro-screen-wrap');
+
+    // Add compatibility-safe body class and preserve previous overflow value so we restore it later
+    const body = document.body;
+    const hadIntroClass = body.classList.contains('intro-active');
+    const prevOverflow = body.style.overflow;
+    if (!hadIntroClass) {
+        body.classList.add('intro-active');
+        // ensure no scroll while intro is visible
+        body.style.overflow = 'hidden';
+    }
+
+    // run the entrance animations (only if elements exist)
+    if (logo) setTimeout(()=>{ logo.style.opacity='1'; logo.style.transform='scale(1)'; }, 50);
+    if (subtitle) setTimeout(()=>{ subtitle.style.opacity='1'; subtitle.style.transform='translateY(0)'; }, 1500);
+    if (loadingContainer && loadingBar) setTimeout(()=>{ loadingContainer.style.opacity='1'; loadingBar.style.width='100%'; }, 3000);
+
+    // hide after sequence
+    setTimeout(()=>{
+        if (wrap) {
+            wrap.style.transition='opacity 1s ease'; wrap.style.opacity='0'; setTimeout(()=>{
+                // remove from DOM and restore body state
+                if (wrap && wrap.parentNode) wrap.parentNode.removeChild(wrap);
+                if (!hadIntroClass) {
+                    body.classList.remove('intro-active');
+                    body.style.overflow = prevOverflow || '';
+                }
+            }, 1000);
+        } else {
+            // If no wrap element (unexpected), still restore body state after delay
+            if (!hadIntroClass) {
+                body.classList.remove('intro-active');
+                body.style.overflow = prevOverflow || '';
+            }
+        }
+    }, 5000);
+})();
+</script>
+
+{% include 'account_management/molecules/nav_bar.html' %}

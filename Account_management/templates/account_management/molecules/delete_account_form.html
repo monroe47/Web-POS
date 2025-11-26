@@ -1,0 +1,13 @@
+{# Molecule: delete confirmation form fragment. Parametric IDs/styles allowed #}
+<form id="{{ form_id|default:'deleteAccountForm' }}" class="delete-form">
+  <input type="hidden" id="{{ selected_input_id|default:'selectedUserId' }}" name="{{ selected_input_name|default:'user_id' }}">
+
+  <div class="delete-box">
+    <h4 class="danger-title">⚠️ Delete Account</h4>
+    <p class="danger-desc">Once deleted, this user’s account cannot be recovered.</p>
+
+    <button type="submit" id="{{ delete_button_id|default:'deleteButton' }}" class="btn-danger">
+      🗑️ Delete Account
+    </button>
+  </div>
+</form>

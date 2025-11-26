@@ -1,0 +1,40 @@
+<!-- CREATE ACCOUNT PANEL (organism) -->
+<aside class="card" aria-label="Create account">
+  <h2 id="create-heading">Create Account</h2>
+  <form method="POST" action="{% url 'account_management:create' %}">
+    {% csrf_token %}
+    <div class="field">
+      <label for="full_name">Full Name</label>
+      <input id="full_name" name="full_name" type="text" required placeholder="Jane Dela Cruz">
+    </div>
+    <div class="field">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" required placeholder="jdelacruz">
+      <div class="muted">No spaces; lowercase recommended</div>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" required placeholder="Choose a strong password">
+    </div>
+    <div class="field">
+      <label for="role">Role</label>
+      <select id="role" name="role" required>
+        <option value="staff">Staff</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="btn-primary">Create Account</button>
+      <button type="reset" class="btn-ghost">Reset</button>
+      <a href="{% url 'account_management:export_csv' %}" class="btn-ghost">Export CSV</a>
+    </div>
+  </form>
+
+  <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+  <h3>Guidelines</h3>
+  <div class="small">
+    Admin accounts have full access.<br>
+    Staff accounts can perform POS and product edits but not user management.
+  </div>
+</aside>

@@ -1,0 +1,50 @@
+<main>
+  <!-- ACCOUNTS TABLE (organism) -->
+  <div class="card">
+    <div class="topbar">
+      <div>
+        <h2>Accounts</h2>
+        <div class="small">Click a row to view user logs.</div>
+      </div>
+
+      <div class="search">
+        {% include 'account_management/molecules/search_bar.html' with action="" name='q' placeholder='Search name or username' button_text='Search' %}
+      </div>
+    </div>
+
+    <div class="table-wrap" role="region" aria-label="List of accounts">
+      <table id="accountsTable">
+        <thead>
+          <tr>
+            <th>Full Name</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Last Activity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for account in accounts %}
+            {% include 'account_management/molecules/account_row.html' with account=account %}
+          {% empty %}
+            <tr><td colspan="5" class="muted">No accounts found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px;" class="muted">Total accounts: {{ accounts.count }}</div>
+
+    <!-- DELETE ACCOUNT FORM -->
+    {% include 'account_management/molecules/delete_account_form.html' %}
+  </div>
+
+  <!-- USER LOG PANEL -->
+  <div class="activity-panel">
+    <section class="card" style="flex:1;">
+      <h3 style="margin-top:0;">User Activity Logs</h3>
+      <div class="activity-list" id="activityList">
+        <div class="muted" style="padding:12px;">Select an account to see recent actions.</div>
+      </div>
+    </section>
+  </div>
+</main>

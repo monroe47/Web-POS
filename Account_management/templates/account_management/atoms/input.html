@@ -1,0 +1,6 @@
+{# Simple input atom — usage: include with label, id, name, type, placeholder, value, required #}
+<div class="field">
+  {% if label %}<label for="{{ id }}">{{ label }}</label>{% endif %}
+  <input id="{{ id }}" name="{{ name }}" type="{{ type|default:'text' }}" placeholder="{{ placeholder|default:'' }}" value="{{ value|default:'' }}" {% if required %}required{% endif %}>
+  {% if help %}<div class="muted">{{ help }}</div>{% endif %}
+</div>

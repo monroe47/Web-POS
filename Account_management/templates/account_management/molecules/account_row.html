@@ -1,0 +1,17 @@
+{# Molecule: single account table row. Expect 'account' in context #}
+{% load tz %}
+<tr class="account-row" data-user-id="{{ account.id }}">
+  <td><strong>{{ account.full_name }}</strong></td>
+  <td>@{{ account.username }}</td>
+  <td><span class="role-badge">{{ account.get_role_display }}</span></td>
+  <td>{% if account.is_active %}Active{% else %}Inactive{% endif %}</td>
+  <td>
+    {% with latest_log=account.logs.first %}
+      {% if latest_log %}
+        {{ latest_log.timestamp|date:"m/d/Y, h:i:s A" }}
+      {% else %}
+        <span class="muted">—</span>
+      {% endif %}
+    {% endwith %}
+  </td>
+</tr>

@@ -1,0 +1,6 @@
+{# Simple reusable button atom. Usage: include with variables: text, classes, type, href #}
+{% if href %}
+  <a href="{{ href }}" class="{{ classes|default:'' }}">{{ text|default:'Click' }}</a>
+{% else %}
+  <button type="{{ type|default:'button' }}" class="{{ classes|default:'' }}">{{ text|default:'Click' }}</button>
+{% endif %}

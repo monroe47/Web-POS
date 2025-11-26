@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        /* When intro is active, hide main content for smooth transition */
+        body.intro-active .container { opacity: 0; pointer-events: none; transition: opacity .4s ease; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(180deg, #d6d9df, #1f242d);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            opacity: 1; /* default visible when intro removed */
+            transition: opacity .4s ease;
+        }
+        .calendar {
+            background: #f5f5f5;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+            min-width: 200px;
+        }
+        .calendar h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.2em;
+        }
+        .calendar table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+        .calendar th, .calendar td {
+            padding: 5px;
+        }
+        .clock {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            text-align: center;
+            min-width: 200px;
+        }
+        .login-box {
+            background: #d9d9d9;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+            width: 280px;
+            text-align: center;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: none;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #1f57ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0037b5;
+        }
+        .message {
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        @media (max-width: 700px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'account_management/intro_screen.html' %}
+
+    <div class="container">
+        <!-- Calendar -->
+        <div class="calendar">
+            <h3 id="month-year"></h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th>
+                        <th>Thu</th><th>Fri</th><th>Sat</th>
+                    </tr>
+                </thead>
+                <tbody id="calendar-body">
+                    <!-- Calendar dates will be injected by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Right Section -->
+        <div>
+            <div class="clock">
+                <h2 id="time"></h2>
+                <p id="date"></p>
+            </div>
+
+            <div class="login-box">
+                <h3>Log in</h3>
+                <form method="post" action="{% url 'account_management:login' %}">
+                    {% csrf_token %}
+                    <input type="text" name="username" placeholder="Username" required>
+                    <input type="password" name="password" placeholder="Password" required>
+                    <button type="submit">Login</button>
+                </form>
+                {% if messages %}
+                    {% for message in messages %}
+                        <p class="message" style="color: {% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% else %}black{% endif %};">
+                            {{ message }}
+                        </p>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Helper to get current time in Manila as a Date object
+        function getManilaNow() {
+            // Create a Date using the Manila offset by converting to locale string in that timezone
+            return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+        }
+
+        // ---------- Clock (Manila) ----------
+        function updateClock() {
+            const now = getManilaNow();
+            const time = now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'Asia/Manila' });
+            const date = now.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Manila' });
+            document.getElementById('time').textContent = time;
+            document.getElementById('date').textContent = `Today is ${date}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ---------- Calendar (Manila) ----------
+        function generateCalendar() {
+            const now = getManilaNow();
+            const month = now.getMonth();
+            const year = now.getFullYear();
+            const monthYear = now.toLocaleString('en-PH', { month: 'long', year: 'numeric', timeZone: 'Asia/Manila' });
+            document.getElementById('month-year').textContent = monthYear;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const tbody = document.getElementById('calendar-body');
+            tbody.innerHTML = '';
+
+            let row = document.createElement('tr');
+            for (let i = 0; i < firstDay; i++) {
+                const cell = document.createElement('td');
+                row.appendChild(cell);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                if (row.children.length === 7) {
+                    tbody.appendChild(row);
+                    row = document.createElement('tr');
+                }
+                const cell = document.createElement('td');
+                cell.textContent = day;
+
+                // Highlight current day
+                if (day === now.getDate()) {
+                    cell.style.color = '#1f57ff';
+                    cell.style.fontWeight = 'bold';
+                }
+                row.appendChild(cell);
+            }
+            tbody.appendChild(row);
+        }
+
+        generateCalendar();
+    </script>
+</body>
+</html>

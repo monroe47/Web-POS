@@ -1,0 +1,5 @@
+{# Molecule: Search bar with configurable action, input name and button text #}
+<form method="GET" action="{{ action|default:'' }}" class="molecule-search">
+  <input name="{{ name|default:'q' }}" type="search" placeholder="{{ placeholder|default:'Search name or username' }}" value="{{ value|default:'' }}">
+  <button class="{{ button_classes|default:'btn-ghost' }}" type="submit">{{ button_text|default:'Search' }}</button>
+</form>

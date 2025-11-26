@@ -1,0 +1,24 @@
+<!-- Shared navigation bar for all authenticated users -->
+{% if user.is_authenticated %}
+<div class="nav_container">
+  <input type="checkbox" id="toggle" />
+  <label for="toggle" class="nav_toggle"><span></span></label>
+
+  <div class="nav_menu">
+    <!-- Common links for all logged-in users -->
+    <a href="{% url 'pos:dashboard' %}" class="nav_link"><span class="nav_icon">📲</span> POS</a>
+    <a href="{% url 'inventory:list' %}" class="nav_link"><span class="nav_icon">📦</span> Inventory</a>
+    <a href="{% url 'sheet:spreadsheet_dashboard' %}" class="nav_link"><span class="nav_icon">𝄜</span> Spreadsheet</a>
+    {% if user.is_superuser %}
+      <a href="{% url 'sales_forecast:dashboard' %}" class="nav_link"><span class="nav_icon">📈</span> Sales Forecast</a>
+      <a href="{% url 'account_management:account_list' %}" class="nav_link"><span class="nav_icon">👤</span> Accounts</a>
+    {% endif %}
+    {% url 'account_management:logout' as logout_url %}
+    <a href="{{ logout_url|default:'/accounts/logout/' }}"
+       class="nav_link"
+       style="margin-top:265px; background:#e74c3c;">
+      <span class="nav_icon">🚪</span> Logout
+    </a>
+  </div>
+</div>
+{% endif %}
