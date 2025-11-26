@@ -1,0 +1,766 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Local Spreadsheet — Dashboard + Editor (IndexedDB)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { --row-h:36px; --left-w:40px; }
+  body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f8fafc; }
+  .container { max-width:1200px; margin:28px auto; padding:0 18px; }
+  .btn { padding:.45rem .7rem; border-radius:.5rem; font-weight:600; cursor:pointer; box-shadow:0 6px 18px rgba(2,6,23,0.06); }
+  .btn-primary{ background:#2563eb;color:#fff } .btn-secondary{ background:#e5e7eb;color:#111827 }
+  .frame { background:#fff; border-radius:8px; padding:12px; box-shadow:0 6px 20px rgba(2,6,23,0.04); }
+  .controls { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+  .msg { padding:8px; border-radius:6px; margin-bottom:8px; display:none; }
+  .grid-wrap { overflow:auto; border:1px solid #e6eef8; border-radius:6px; background:#fff; position:relative; min-height:320px; }
+  .grid { display:grid; grid-auto-rows: var(--row-h); align-items:stretch; }
+  .cell { min-width:60px; height:var(--row-h); line-height:var(--row-h); border-right:1px solid #e6eef8; border-bottom:1px solid #e6eef8; padding:0 6px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; cursor:pointer; }
+  .cell-header { background:#f3f4f6; font-weight:600; text-align:center; position:relative; user-select:none; }
+  .row-header { background:#f3f4f6; text-align:center; min-width:var(--left-w); }
+  .data-cell { text-align:right; color:#111827; background:white; }
+  .data-cell.active { background:#eff6ff; outline:2px solid #bfdbfe; outline-offset:-2px; }
+  .col-resize-handle { position:absolute; right:0; top:0; bottom:0; width:8px; cursor:col-resize; }
+  .hidden { display:none; }
+  .bg-white{ background:#fff; } .bg-yellow{ background:#fef3c7; } .bg-green{ background:#bbf7d0; } .bg-red{ background:#fecaca; }
+  .muted { color:#6b7280; font-size:0.92rem; }
+  .tag { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; font-size:0.85rem; }
+  input.formula { width:100%; padding:6px 8px; border-radius:6px; border:1px solid #e6eef8; height:36px; }
+  .file-row:hover { background:#f8fafc; }
+  .nav_container {
+    position: fixed; 
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 1000;
+}
+
+.nav_container input { display: none; }
+
+.nav_toggle {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 50px;
+    height: 50px;
+    background: #007bff;
+    color: white;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1001;
+    transition: background 0.3s ease;
+}
+.nav_toggle:hover { background: #0056b3; }
+.nav_container input:checked ~ .nav_toggle { background: #e74c3c; }
+
+.nav_toggle::before, .nav_toggle::after, .nav_toggle span {
+    content: '';
+    position: absolute;
+    width: 25px;
+    height: 3px;
+    background: white;
+    border-radius: 2px;
+    transition: 0.3s ease;
+}
+.nav_toggle::before { transform: translateY(-7px); }
+.nav_toggle::after { transform: translateY(7px); }
+.nav_container input:checked ~ .nav_toggle::before { transform: rotate(45deg); top: 23px; }
+.nav_container input:checked ~ .nav_toggle::after { transform: rotate(-45deg); top: 23px; }
+.nav_container input:checked ~ .nav_toggle span { transform: scaleX(0); }
+
+.nav_menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 220px;
+    background: #2c3e50;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+    transform: translateX(-100%);
+    transition: transform 0.4s ease-out;
+    padding-top: 80px;
+    display: flex;
+    flex-direction: column;
+}
+.nav_container input:checked ~ .nav_menu { transform: translateX(0); }
+
+.nav_link {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    color: white;
+    font-size: 1rem;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    opacity: 0.8;
+    transition: background 0.2s ease, opacity 0.2s ease;
+}
+.nav_link:hover {
+    background: #34495e;
+    opacity: 1;
+}
+
+.nav_link .nav_icon {
+    margin-right: 15px;
+    font-size: 1.2rem;
+}
+
+</style>
+</head>
+<body>
+  <div class="container">
+    <header class="mb-6">
+      <h1 class="text-2xl font-bold">Local Spreadsheet (IndexedDB) — Dashboard</h1>
+      <p class="muted mt-1">Create, save, load, rename, delete spreadsheets. Editor supports resizable columns, dynamic rows/cols, formulas, colors, CSV export.</p>
+    </header>
+
+    <div id="msg" class="msg bg-yellow-100 border border-yellow-200"></div>
+
+    <!-- DASHBOARD VIEW -->
+    <section id="dashboard" class="frame mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <button id="btn-new" class="btn btn-primary">+ New Spreadsheet</button>
+          <button id="btn-import" class="btn btn-secondary">Import Sample</button>
+        </div>
+        <div class="muted tag">Local repository: <strong>IndexedDB</strong></div>
+      </div>
+
+      <div id="dashboard-list" class="border rounded"></div>
+    </section>
+
+    <!-- EDITOR VIEW (hidden by default) -->
+    <section id="editor" class="hidden">
+      <div class="frame mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <button id="btn-back" class="btn btn-secondary mr-3">← Back</button>
+            <span class="muted">Editing: </span>
+            <span id="file-name" class="tag">Untitled</span>
+            <span class="muted mx-2">|</span>
+            <span class="muted">ID: <span id="file-id" class="tag">—</span></span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <div class="muted">Rows: <span id="rows-count">10</span></div>
+            <div class="muted">Cols: <span id="cols-count">5</span></div>
+            <button id="add-row" class="btn btn-secondary">+ Row</button>
+            <button id="del-row" class="btn btn-secondary">- Row</button>
+            <button id="add-col" class="btn btn-secondary">+ Col</button>
+            <button id="del-col" class="btn btn-secondary">- Col</button>
+            <button id="btn-save" class="btn btn-primary">💾 Save</button>
+            <button id="btn-rename" class="btn btn-secondary">✏️ Rename</button>
+            <button id="btn-export" class="btn btn-secondary">⬇️ CSV</button>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <input id="formula-input" class="formula" placeholder="Click a cell or press Enter to edit. Formulas start with =, SUM(A1:A10) supported." />
+        </div>
+
+        <div class="grid-wrap" id="grid-wrap">
+          <div id="grid" class="grid"></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+{% include 'account_management/molecules/nav_bar.html' %}
+
+<script>
+/* Single-file app: Dashboard + Editor, IndexedDB repository.
+   - Dashboard lists saved files with Load / Rename / Delete
+   - Editor supports dynamic rows/cols, resizable columns, color cycle, formulas, CSV export
+*/
+
+(async function(){
+
+// ====== Config & State =====================================================
+const DEFAULT_ROWS = 10;
+const DEFAULT_COLS = 5;
+const LEFT_COL_W = 40; // px fixed
+const DEFAULT_COL_W = 120;
+const MIN_COL_W = 60;
+const COLOR_CLASSES = ['bg-white','bg-yellow','bg-green','bg-red'];
+
+let ROWS = DEFAULT_ROWS;
+let COLS = DEFAULT_COLS;
+let columnWidths = [];
+let cells = {}; // { "A1": { value:'', result:'', color:'bg-white' } }
+let activeCell = 'A1';
+let floatingInput = null;
+let currentFile = null; // { id, name, rows, cols, columnWidths, cells, updatedISO }
+
+// DOM refs
+const dashboardView = document.getElementById('dashboard');
+const editorView = document.getElementById('editor');
+const dashboardListEl = document.getElementById('dashboard-list');
+const msgEl = document.getElementById('msg');
+const gridEl = document.getElementById('grid');
+const gridWrap = document.getElementById('grid-wrap');
+const fileNameEl = document.getElementById('file-name');
+const fileIdEl = document.getElementById('file-id');
+const rowsCountEl = document.getElementById('rows-count');
+const colsCountEl = document.getElementById('cols-count');
+const formulaInput = document.getElementById('formula-input');
+
+// Buttons
+document.getElementById('btn-new').onclick = ()=> { newBlank(); openEditor(); showMsg('New spreadsheet created — save to keep.'); };
+document.getElementById('btn-import').onclick = ()=> { importSample(); openEditor(); showMsg('Sample imported — save to keep.'); };
+
+document.getElementById('btn-back').onclick = ()=> { closeEditor(); renderDashboardList(); };
+document.getElementById('add-row').onclick = ()=> { ROWS++; ensureCells(); buildGrid(); showCounts(); };
+document.getElementById('del-row').onclick = ()=> { if (ROWS>1) { ROWS--; pruneCells(); buildGrid(); showCounts(); } };
+document.getElementById('add-col').onclick = ()=> { COLS++; columnWidths.push(DEFAULT_COL_W); ensureCells(); buildGrid(); showCounts(); };
+document.getElementById('del-col').onclick = ()=> { if (COLS>1) { COLS--; columnWidths.pop(); pruneCells(); buildGrid(); showCounts(); } };
+
+document.getElementById('btn-save').onclick = ()=> saveFile();
+document.getElementById('btn-rename').onclick = ()=> renameCurrentFile();
+document.getElementById('btn-export').onclick = ()=> exportCSV();
+
+// ====== IndexedDB helpers ==================================================
+let db;
+function openDb(){
+  return new Promise((resolve,reject)=>{
+    const r = indexedDB.open('repo-spreadsheet-db', 1);
+    r.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('files')){
+        const os = d.createObjectStore('files', { keyPath: 'id' });
+        os.createIndex('updated', 'updatedISO');
+      }
+    };
+    r.onsuccess = (e) => { db = e.target.result; resolve(db); };
+    r.onerror = (e) => reject(e.target.error);
+  });
+}
+function dbPut(obj){ return new Promise((res,rej)=>{ const tx=db.transaction('files','readwrite'); const os=tx.objectStore('files'); const rq=os.put(obj); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
+function dbGet(id){ return new Promise((res,rej)=>{ const tx=db.transaction('files','readonly'); const os=tx.objectStore('files'); const rq=os.get(id); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
+function dbGetAll(){ return new Promise((res,rej)=>{ const tx=db.transaction('files','readonly'); const os=tx.objectStore('files'); const rq=os.getAll(); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
+function dbDelete(id){ return new Promise((res,rej)=>{ const tx=db.transaction('files','readwrite'); const os=tx.objectStore('files'); const rq=os.delete(id); rq.onsuccess=()=>res(); rq.onerror=()=>rej(rq.error); }); }
+
+// ====== Utilities ==========================================================
+function showMsg(text, t=3000){
+  msgEl.textContent = text;
+  msgEl.style.display = 'block';
+  setTimeout(()=> msgEl.style.display = 'none', t);
+}
+function randId(){ return Math.random().toString(36).slice(2,9) + Math.random().toString(36).slice(2,9); }
+
+// Convert 0->A, 25->Z, 26->AA
+function indexToCol(i){
+  let s=''; i++;
+  while(i>0){ const r=(i-1)%26; s = String.fromCharCode(65+r) + s; i = Math.floor((i-1)/26); }
+  return s;
+}
+function colToIndex(col){
+  let n=0;
+  for(let i=0;i<col.length;i++){ n = n*26 + (col.charCodeAt(i)-64); }
+  return n-1;
+}
+function ensureColumnWidths(){ while(columnWidths.length < COLS) columnWidths.push(DEFAULT_COL_W); if (columnWidths.length > COLS) columnWidths = columnWidths.slice(0,COLS); }
+function showCounts(){ rowsCountEl.textContent = ROWS; colsCountEl.textContent = COLS; }
+
+// ====== Grid build & cell management ======================================
+function buildGrid(){
+  ensureColumnWidths();
+  ensureCells();
+  gridEl.innerHTML = '';
+  // set grid template columns: left fixed + column widths
+  const colsSpec = [ `${LEFT_COL_W}px`, ...columnWidths.map(w => `${w}px`) ];
+  gridEl.style.gridTemplateColumns = colsSpec.join(' ');
+
+  // top-left corner
+  const corner = document.createElement('div'); corner.className = 'cell cell-header row-header'; corner.style.height = `${LEFT_COL_W}px`; gridEl.appendChild(corner);
+
+  // column headers + resizers
+  for(let c=0;c<COLS;c++){
+    const label = indexToCol(c);
+    const header = document.createElement('div');
+    header.className = 'cell cell-header';
+    header.style.position = 'relative';
+    header.style.height = `${LEFT_COL_W}px`;
+    header.dataset.col = c;
+    header.innerHTML = `<div style="pointer-events:none;">${label}</div>`;
+    const res = document.createElement('div'); res.className = 'col-resize-handle'; res.dataset.col = c;
+    header.appendChild(res);
+    gridEl.appendChild(header);
+    res.addEventListener('mousedown', startColResize);
+  }
+
+  // rows
+  for(let r=1;r<=ROWS;r++){
+    const rowHeader = document.createElement('div');
+    rowHeader.className = 'cell row-header';
+    rowHeader.textContent = r;
+    gridEl.appendChild(rowHeader);
+
+    for(let c=0;c<COLS;c++){
+      const key = indexToCol(c) + r;
+      const cell = document.createElement('div');
+      cell.className = 'cell data-cell ' + ((cells[key] && cells[key].color) ? cells[key].color : 'bg-white');
+      cell.dataset.cell = key;
+      const raw = (cells[key] && typeof cells[key].value !== 'undefined') ? cells[key].value : '';
+      // show computed result if formula
+      cell.textContent = (String(raw).startsWith('=')) ? ((cells[key] && typeof cells[key].result !== 'undefined') ? cells[key].result : '') : raw;
+      gridEl.appendChild(cell);
+
+      cell.onclick = ()=> activateCell(key);
+      cell.ondblclick = ()=> cycleColor(key);
+      cell.onkeydown = (e)=> { if (e.key==='Enter'){ activateCell(key); e.preventDefault(); } };
+    }
+  }
+  refreshActiveHighlight();
+  showCounts();
+}
+
+// prepare cells object for grid size
+function ensureCells(){
+  for(let r=1;r<=ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const k = indexToCol(c) + r;
+      if (!cells[k]) cells[k] = { value:'', result:'', color:'bg-white' };
+    }
+  }
+  pruneCells();
+}
+
+function pruneCells(){
+  const keep = {};
+  for(let r=1;r<=ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const k = indexToCol(c) + r;
+      if (cells[k]) keep[k] = cells[k];
+      else keep[k] = { value:'', result:'', color:'bg-white' };
+    }
+  }
+  cells = keep;
+}
+
+// ====== Cell editing & floating input =====================================
+function activateCell(key){
+  activeCell = key;
+  refreshActiveHighlight();
+  openFloatingInput(key);
+}
+
+function refreshActiveHighlight(){
+  gridEl.querySelectorAll('.data-cell').forEach(el=>{
+    el.classList.toggle('active', el.dataset.cell === activeCell);
+  });
+  formulaInput.value = cells[activeCell] ? cells[activeCell].value : '';
+}
+
+function openFloatingInput(key){
+  closeFloatingInput();
+  const el = gridEl.querySelector(`.data-cell[data-cell="${key}"]`);
+  if (!el) return;
+  const cellRect = el.getBoundingClientRect();
+  const wrapRect = gridWrap.getBoundingClientRect();
+  floatingInput = document.createElement('input');
+  floatingInput.type = 'text';
+  floatingInput.className = 'formula';
+  floatingInput.value = cells[key] ? cells[key].value : '';
+  floatingInput.style.position = 'absolute';
+  floatingInput.style.left = (cellRect.left - wrapRect.left) + 'px';
+  floatingInput.style.top = (cellRect.top - wrapRect.top) + 'px';
+  floatingInput.style.width = Math.max(40, cellRect.width - 6) + 'px';
+  floatingInput.style.height = Math.max(24, cellRect.height - 6) + 'px';
+  floatingInput.style.zIndex = 9999;
+  gridWrap.appendChild(floatingInput);
+  floatingInput.focus();
+  floatingInput.select();
+
+  floatingInput.onblur = ()=> {
+    const v = floatingInput.value;
+    cells[key].value = v;
+    closeFloatingInput();
+    recalcAll();
+  };
+  floatingInput.onkeydown = (e) => {
+    if (e.key === 'Enter'){ floatingInput.blur(); e.preventDefault(); }
+    if (e.key === 'Escape'){ closeFloatingInput(); }
+  };
+}
+
+function closeFloatingInput(){
+  if (floatingInput && floatingInput.parentNode) floatingInput.parentNode.removeChild(floatingInput);
+  floatingInput = null;
+  formulaInput.value = cells[activeCell] ? cells[activeCell].value : '';
+}
+
+// sync top formula input with active cell (user can also edit there)
+formulaInput.addEventListener('input', (e)=>{
+  if (!activeCell) return;
+  cells[activeCell].value = e.target.value;
+  recalcAll();
+});
+
+// keyboard navigation (arrows move active cell)
+document.addEventListener('keydown', (e)=>{
+  if (document.activeElement === floatingInput || document.activeElement === formulaInput) return;
+  const m = activeCell.match(/^([A-Z]+)(\d+)$/);
+  if (!m) return;
+  let col = colToIndex(m[1]);
+  let row = parseInt(m[2],10);
+  if (e.key === 'ArrowUp'){ if (row>1) row--; activateCell(indexToCol(col)+row); e.preventDefault(); }
+  if (e.key === 'ArrowDown'){ if (row<ROWS) row++; activateCell(indexToCol(col)+row); e.preventDefault(); }
+  if (e.key === 'ArrowLeft'){ if (col>0) col--; activateCell(indexToCol(col)+row); e.preventDefault(); }
+  if (e.key === 'ArrowRight'){ if (col<COLS-1) col++; activateCell(indexToCol(col)+row); e.preventDefault(); }
+  if (e.key === 'Enter'){ openFloatingInput(activeCell); e.preventDefault(); }
+});
+
+// ====== Color cycling ======================================================
+function cycleColor(key){
+  if (!cells[key]) cells[key] = { value:'', result:'', color:'bg-white' };
+  const cur = cells[key].color || 'bg-white';
+  const idx = COLOR_CLASSES.indexOf(cur);
+  const next = COLOR_CLASSES[(idx+1) % COLOR_CLASSES.length];
+  cells[key].color = next;
+  recalcAll();
+}
+
+// ====== Formula engine =====================================================
+function getCellValue(key){
+  const d = cells[key];
+  return (d && typeof d.result === 'number' && !isNaN(d.result)) ? d.result : 0;
+}
+function resolveRef(m){ return getCellValue(String(m).toUpperCase()).toString(); }
+
+function evaluateFormula(formula){
+  const s = String(formula || ''), _ = (x)=>String(x).replace(/^\s*=\s*/,'').trim();
+  if (!s.startsWith('=')){
+    const n = parseFloat(s);
+    return isNaN(n) ? s : n;
+  }
+  let expr = s.substring(1).trim();
+
+  // SUM(A1:A10) supports multi-letter columns as well
+  expr = expr.replace(/SUM\(([A-Z]+)(\d+):([A-Z]+)(\d+)\)/gi, (m, sc, sr, ec, er) => {
+    sc = sc.toUpperCase(); ec = ec.toUpperCase();
+    const sRow = parseInt(sr,10), eRow = parseInt(er,10);
+    if (sRow > eRow) return 'NaN';
+    // handle multi-col ranges only when same col
+    if (sc !== ec) return 'NaN';
+    let sum = 0;
+    for(let r=sRow;r<=eRow;r++){
+      const k = sc + r;
+      sum += Number(getCellValue(k) || 0);
+    }
+    return String(sum);
+  });
+
+  // built-in functions: VALUE, AVG, MIN, MAX, COUNTA
+  expr = expr.replace(/VALUE\(([^\)]+)\)/gi, (m, e1) => { return _resolveValueFn(_, e1); });
+  expr = expr.replace(/AVG\(([^\)]+)\)/gi, (m, e1) => { return _resolveAvgFn(_, e1); });
+  expr = expr.replace(/MIN\(([^\)]+)\)/gi, (m, e1) => { return _resolveMinFn(_, e1); });
+  expr = expr.replace(/MAX\(([^\)]+)\)/gi, (m, e1) => { return _resolveMaxFn(_, e1); });
+  expr = expr.replace(/COUNTA\(([^\)]+)\)/gi, (m, e1) => { return _resolveCountAFn(_, e1); });
+
+  expr = expr.replace(/[A-Z]+\d+/gi, (m)=>resolveRef(m));
+  try {
+    const val = new Function('return ' + expr)();
+    if (typeof val === 'number' && val % 1 !== 0) return parseFloat(val.toFixed(4));
+    return val;
+  } catch(e){
+    return '#ERROR';
+  }
+}
+
+// custom resolvers for functions: VALUE, AVG, MIN, MAX, COUNTA
+function _resolveValueFn(_, e1){
+  const v = _evalList(_, e1);
+  return (v && v.length) ? v[0] : '0';
+}
+function _resolveAvgFn(_, e1){
+  const v = _evalList(_, e1);
+  if (!v || !v.length) return '0';
+  const sum = v.reduce((a,b)=>{ return (parseFloat(a)||0) + (parseFloat(b)||0); }, 0);
+  return String(sum / v.length);
+}
+function _resolveMinFn(_, e1){
+  const v = _evalList(_, e1);
+  if (!v || !v.length) return '0';
+  const min = v.reduce((a,b)=> Math.min(a, isNaN(b) ? Infinity : parseFloat(b)), Infinity);
+  return String(min === Infinity ? 0 : min);
+}
+function _resolveMaxFn(_, e1){
+  const v = _evalList(_, e1);
+  if (!v || !v.length) return '0';
+  const max = v.reduce((a,b)=> Math.max(a, isNaN(b) ? -Infinity : parseFloat(b)), -Infinity);
+  return String(max === -Infinity ? 0 : max);
+}
+function _resolveCountAFn(_, e1){
+  const v = _evalList(_, e1);
+  return String((v && v.length) ? v.filter(x => String(x).trim() !== '').length : 0);
+}
+
+// eval list expressions: A1:A10, A1, 100, "text"
+function _evalList(_, e1){
+  let res = [];
+  const add = (x) => { if (typeof x !== 'undefined') res.push(x); };
+  const range = e1.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/i);
+  if (range){
+    // expand range: A1:A10
+    const startCol = colToIndex(range[1]), startRow = parseInt(range[2],10);
+    const endCol = colToIndex(range[3]), endRow = parseInt(range[4],10);
+    for(let r=startRow;r<=endRow;r++){
+      for(let c=startCol;c<=endCol;c++){
+        add(getCellValue(indexToCol(c)+r));
+      }
+    }
+  } else {
+    // single value or ref
+    const val = resolveRef(e1);
+    if (!isNaN(val)) add(parseFloat(val));
+    else add(val);
+  }
+  return res;
+}
+
+function recalcAll(){
+  ensureCells();
+  const raw = {};
+  for(const k in cells) raw[k] = String(cells[k].value || '');
+  let changed, iter = 0, maxIter = (ROWS * COLS) + 10;
+  do {
+    changed = false; iter++;
+    for(const k in raw){
+      const newRes = evaluateFormula(raw[k]);
+      if (String(cells[k].result) !== String(newRes)){ cells[k].result = newRes; changed = true; }
+    }
+  } while(changed && iter < maxIter);
+
+  // refresh UI text + colors
+  gridEl.querySelectorAll('.data-cell').forEach(el=>{
+    const k = el.dataset.cell;
+    const rawv = (cells[k] && typeof cells[k].value !== 'undefined') ? String(cells[k].value) : '';
+    if (rawv.startsWith('=')){
+      el.textContent = (typeof cells[k].result !== 'undefined') ? cells[k].result : '';
+      el.style.textAlign = (typeof cells[k].result === 'number') ? 'right' : 'left';
+    } else {
+      el.textContent = rawv;
+      el.style.textAlign = (!isNaN(parseFloat(rawv)) && rawv !== '') ? 'right' : 'left';
+    }
+    el.classList.remove(...COLOR_CLASSES);
+    el.classList.add((cells[k] && cells[k].color) ? cells[k].color : 'bg-white');
+  });
+
+  // sync formula input if editing active
+  if (!floatingInput) formulaInput.value = cells[activeCell] ? cells[activeCell].value : '';
+}
+
+// ====== Column resizing ====================================================
+let resizing = null;
+function startColResize(e){
+  e.preventDefault();
+  const col = Number(e.target.dataset.col);
+  resizing = { col, startX: e.clientX, startW: columnWidths[col] };
+  document.addEventListener('mousemove', doResize);
+  document.addEventListener('mouseup', stopResize);
+}
+function doResize(e){
+  if (!resizing) return;
+  const delta = e.clientX - resizing.startX;
+  const newW = Math.max(MIN_COL_W, resizing.startW + delta);
+  columnWidths[resizing.col] = newW;
+  const spec = [ `${LEFT_COL_W}px`, ...columnWidths.map(w => `${w}px`) ];
+  gridEl.style.gridTemplateColumns = spec.join(' ');
+
+  // reposition floating input if open
+  if (floatingInput) {
+    openFloatingInput(activeCell); // reposition
+  }
+}
+function stopResize(){
+  document.removeEventListener('mousemove', doResize);
+  document.removeEventListener('mouseup', stopResize);
+  resizing = null;
+}
+
+// ====== CSV Export =========================================================
+function exportCSV(){
+  if (!currentFile) showMsg('Save file first to keep a copy.');
+  const rowsArr = [];
+  rowsArr.push(',' + Array.from({length:COLS}).map((_,i)=>indexToCol(i)).join(','));
+  for(let r=1;r<=ROWS;r++){
+    const row = [String(r)];
+    for(let c=0;c<COLS;c++){
+      const k = indexToCol(c)+r;
+      let v = String((cells[k] && typeof cells[k].value !== 'undefined') ? cells[k].value : '');
+      v = v.replace(/"/g,'""');
+      if (v.includes(',')||v.includes('"')||v.includes('\n')) v = `"${v}"`;
+      row.push(v);
+    }
+    rowsArr.push(row.join(','));
+  }
+  const csv = rowsArr.join('\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  const nameSafe = (currentFile && currentFile.name) ? currentFile.name.replace(/\s+/g,'_') : 'sheet';
+  a.href = URL.createObjectURL(blob);
+  a.download = `${nameSafe}_${(new Date()).toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  showMsg('CSV exported',1500);
+}
+
+// ====== Save / Load / Dashboard ============================================
+async function saveFile(forceName){
+  if (!db) { showMsg('DB not available'); return; }
+  if (!currentFile){
+    const nm = forceName || prompt('Enter file name:', 'Untitled');
+    if (!nm) { showMsg('Save cancelled'); return; }
+    currentFile = { id: randId(), name: nm };
+  }
+  pruneCells();
+  currentFile.rows = ROWS;
+  currentFile.cols = COLS;
+  currentFile.columnWidths = columnWidths.slice();
+  currentFile.cells = cells;
+  currentFile.updatedISO = (new Date()).toISOString();
+  await dbPut(currentFile);
+  fileNameEl.textContent = currentFile.name;
+  fileIdEl.textContent = currentFile.id;
+  showMsg('Saved ✓', 1500);
+  renderDashboardList();
+}
+async function renameCurrentFile(){
+  if (!currentFile) { showMsg('No file loaded. Save first.'); return; }
+  const newName = prompt('Rename file:', currentFile.name);
+  if (!newName) return;
+  currentFile.name = newName.trim();
+  await saveFile();
+}
+async function loadFile(id){
+  const doc = await dbGet(id);
+  if (!doc) { showMsg('File not found'); return; }
+  currentFile = doc;
+  ROWS = doc.rows || DEFAULT_ROWS;
+  COLS = doc.cols || DEFAULT_COLS;
+  columnWidths = (doc.columnWidths && doc.columnWidths.length) ? doc.columnWidths.slice() : Array.from({length:COLS}, ()=>DEFAULT_COL_W);
+  cells = doc.cells || {};
+  fileNameEl.textContent = currentFile.name || 'Untitled';
+  fileIdEl.textContent = currentFile.id;
+  buildGrid();
+  recalcAll();
+  openEditor();
+  showMsg('Loaded: ' + (currentFile.name || 'Untitled'), 1500);
+}
+async function deleteFile(id){
+  if (!confirm('Delete this spreadsheet? This cannot be undone.')) return;
+  await dbDelete(id);
+  if (currentFile && currentFile.id === id) { newBlank(); closeEditor(); }
+  renderDashboardList();
+  showMsg('Deleted',1200);
+}
+
+async function renderDashboardList(){
+  if (!db) { dashboardListEl.innerHTML = '<div class="p-3 muted">DB not ready</div>'; return; }
+  const all = await dbGetAll();
+  dashboardListEl.innerHTML = '';
+  if (!all || all.length === 0){
+    dashboardListEl.innerHTML = '<div class="p-4 muted">No saved spreadsheets yet — click "New Spreadsheet" to start.</div>';
+    return;
+  }
+  all.sort((a,b)=> new Date(b.updatedISO) - new Date(a.updatedISO));
+  all.forEach(file=>{
+    const row = document.createElement('div');
+    row.className = 'p-3 border-b flex items-center justify-between file-row';
+    row.innerHTML = `
+      <div>
+        <div style="font-weight:600">${escapeHtml(file.name || 'Untitled')}</div>
+        <div class="muted" style="font-size:0.85rem">Updated: ${new Date(file.updatedISO).toLocaleString()}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" data-load="${file.id}">Load</button>
+        <button class="btn btn-secondary" data-rename="${file.id}">Rename</button>
+        <button class="btn" style="background:#ef4444;color:#fff" data-delete="${file.id}">Delete</button>
+      </div>
+    `;
+    dashboardListEl.appendChild(row);
+    row.querySelector('[data-load]').onclick = ()=> loadFile(file.id);
+    row.querySelector('[data-rename]').onclick = async ()=>{
+      const newName = prompt('Rename file:', file.name || 'Untitled');
+      if (!newName) return;
+      file.name = newName.trim();
+      file.updatedISO = (new Date()).toISOString();
+      await dbPut(file);
+      renderDashboardList();
+      showMsg('Renamed',1200);
+    };
+    row.querySelector('[data-delete]').onclick = ()=> deleteFile(file.id);
+  });
+}
+
+// ====== New Blank & Sample =================================================
+function newBlank(){
+  ROWS = DEFAULT_ROWS;
+  COLS = DEFAULT_COLS;
+  columnWidths = Array.from({length:COLS}, ()=>DEFAULT_COL_W);
+  cells = {};
+  ensureCells();
+  currentFile = null;
+  fileNameEl.textContent = 'Untitled';
+  fileIdEl.textContent = '—';
+  buildGrid();
+  recalcAll();
+}
+
+function importSample(){
+  newBlank();
+  cells['A1'].value = '100'; cells['A2'].value = '200'; cells['B1'].value = 'Budget';
+  cells['B2'].value = '=A1+A2'; cells['A3'].value = '=SUM(A1:A2)'; cells['C1'].value = '=B2/10';
+  cells['A1'].color = 'bg-yellow'; cells['B2'].color = 'bg-green';
+  recalcAll();
+  buildGrid();
+}
+
+// ====== Editor open/close ==================================================
+function openEditor(){
+  dashboardView.style.display = 'none';
+  editorView.style.display = 'block';
+  formulaInput.value = cells[activeCell] ? cells[activeCell].value : '';
+  showCounts();
+}
+function closeEditor(){
+  dashboardView.style.display = 'block';
+  editorView.style.display = 'none';
+}
+
+// ====== Init =================================================================
+try {
+  await openDb();
+} catch(e){
+  console.error('IndexedDB init failed', e);
+  showMsg('IndexedDB unavailable. App will still run but data may not persist.');
+}
+
+// start with dashboard
+newBlank();
+buildGrid();
+recalcAll();
+renderDashboardList();
+showMsg('Ready — dashboard loaded', 1200);
+
+// helper escape
+function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+// small helpers redefined locally
+function indexToCol(i){ let s=''; i++; while(i>0){ const r=(i-1)%26; s = String.fromCharCode(65+r) + s; i = Math.floor((i-1)/26); } return s; }
+function indexToColAlias(n){ return indexToCol(n); }
+function indexToColSafe(i){ return indexToCol(i); }
+function indexToColWrapper(i){ return indexToCol(i); }
+function indexToCol2(i){ return indexToCol(i); }
+// keep indexToCol available globally for console
+window.indexToCol = indexToCol;
+
+})(); // end IIFE
+</script>
+</body>
+</html>

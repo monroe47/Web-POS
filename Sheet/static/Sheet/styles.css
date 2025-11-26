@@ -1,0 +1,6 @@
+/* Minimal stylesheet for spreadsheet templates */
+body { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+.cell { box-sizing: border-box; }
+.hidden-view { display: none; }
+/* Keep small helpers in case Tailwind isn't loaded */
+.btn { cursor: pointer; }
