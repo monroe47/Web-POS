@@ -1,0 +1,871 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management</title>
+    <link rel="stylesheet" href="{% static 'Inventory/Inventory.css' %}">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .form-section h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .category-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .category-group select,
+        .category-group input {
+            flex: 1;
+        }
+
+        .color-grid {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+        }
+
+        .color-swatch {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .color-swatch.selected {
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px white, 0 0 0 4px #667eea;
+        }
+
+        .preview {
+            display: flex;
+            gap: 20px;
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .preview-box {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #e0e0e0;
+            overflow: hidden;
+        }
+
+        .preview-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .preview-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .preview-label {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .preview-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .controls-bar {
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .restock-form {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .restock-form select,
+        .restock-form input {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid;
+        }
+
+        .alert-warning {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+
+        .alert-success {
+            background: #dcfce7;
+            border-color: #10b981;
+            color: #166534;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+
+        .alert ul {
+            margin-left: 20px;
+            margin-top: 8px;
+        }
+
+        .alert li {
+            margin-bottom: 4px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table thead {
+            background: #f3f4f6;
+        }
+
+        table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 13px;
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        table tr:hover {
+            background: #f9fafb;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+            margin-right: 6px;
+        }
+
+        .action-btn-edit {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .action-btn-edit:hover {
+            background: #bfdbfe;
+        }
+
+        .action-btn-delete {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .action-btn-delete:hover {
+            background: #fecaca;
+        }
+
+        .action-btn-save {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .action-btn-save:hover {
+            background: #bbf7d0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-stock-low {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-stock-good {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Navigation styles copied from Sheet app to style the shared nav_bar include */
+        .nav_container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            z-index: 1000;
+        }
+
+        .nav_container input { display: none; }
+
+        .nav_toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            transition: background 0.3s ease;
+        }
+        .nav_toggle:hover { background: #0056b3; }
+        .nav_container input:checked ~ .nav_toggle { background: #e74c3c; }
+
+        .nav_toggle::before, .nav_toggle::after, .nav_toggle span {
+            content: '';
+            position: absolute;
+            width: 25px;
+            height: 3px;
+            background: white;
+            border-radius: 2px;
+            transition: 0.3s ease;
+        }
+        .nav_toggle::before { transform: translateY(-7px); }
+        .nav_toggle::after { transform: translateY(7px); }
+        .nav_container input:checked ~ .nav_toggle::before { transform: rotate(45deg); top: 23px; }
+        .nav_container input:checked ~ .nav_toggle::after { transform: rotate(-45deg); top: 23px; }
+        .nav_container input:checked ~ .nav_toggle span { transform: scaleX(0); }
+
+        .nav_menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 220px;
+            background: #2c3e50;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            transform: translateX(-100%);
+            transition: transform 0.4s ease-out;
+            padding-top: 80px;
+            display: flex;
+            flex-direction: column;
+        }
+        .nav_container input:checked ~ .nav_menu { transform: translateX(0); }
+
+        .nav_link {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: white;
+            font-size: 1rem;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0.8;
+            transition: background 0.2s ease, opacity 0.2s ease;
+        }
+        .nav_link:hover {
+            background: #34495e;
+            opacity: 1;
+        }
+        .nav_link .nav_icon {
+            margin-right: 15px;
+            font-size: 1.2rem;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="toast-container" class="toast-container"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Inventory Management</h1>
+            <p>Add, update, and manage your product inventory</p>
+        </div>
+
+        <!-- Add Product Form -->
+        <div class="card form-section">
+            <h2>Add New Product</h2>
+            <form id="productForm" method="POST" action="{% url 'inventory:add_product' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <!-- Product Info Row -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pname">Product Name *</label>
+                        <input id="pname" name="name" type="text" placeholder="e.g., Dishwashing Liquid 1L" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="psku">SKU</label>
+                        <input id="psku" name="sku" type="text" placeholder="Auto-generated or edit" />
+                    </div>
+                </div>
+
+                <!-- Price & Stock Row -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pprice">Price (PHP) *</label>
+                        <input id="pprice" name="price" type="number" min="0" step="0.01" placeholder="0.00" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="pstock">Stock Quantity</label>
+                        <input id="pstock" name="pstock" type="number" min="0" value="0" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="pminstocklevel">Min Stock Level</label>
+                        <input id="pminstocklevel" name="min_stock_level" type="number" min="0" value="10" required />
+                    </div>
+                </div>
+
+                <!-- Category & Image Row -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <div class="category-group">
+                            <select id="pcategory" name="pcategory">
+                                <option value="">Select or type new</option>
+                                {% for category in categories %}
+                                  <option value="{{ category }}">{{ category }}</option>
+                                {% endfor %}
+                            </select>
+                            <input id="categoryInput" name="category_input" type="text" placeholder="New category" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="pimg">Product Image</label>
+                        <input id="pimg" name="image" type="file" accept="image/*" />
+                        <input type="hidden" id="selected_image" name="selected_image" value="" />
+                        <div style="margin-top:8px;font-size:13px;color:#555">Or choose an existing image from the gallery below</div>
+                        <div id="existing-images" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;max-height:160px;overflow:auto;padding-top:8px;">
+                            {% for img in existing_images %}
+                                <div class="existing-thumb" style="cursor:pointer;border:2px solid transparent;padding:4px;border-radius:6px;" data-path="{{ img.path }}" data-url="{{ img.url }}">
+                                    <img src="{{ img.url }}" alt="{{ img.name }}" style="width:72px;height:72px;object-fit:cover;border-radius:4px;display:block;" />
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Color Picker -->
+                <div class="form-group">
+                    <label>Background Color</label>
+                    <div class="color-grid" id="colorGrid"></div>
+                    <input id="customColor" name="color_hex" type="color" value="#fef3c7" style="width: 50px; height: 40px; border: none; border-radius: 6px; cursor: pointer;" />
+                </div>
+
+                <!-- Live Preview -->
+                <div id="productPreview" class="preview">
+                    <div class="preview-box" id="previewBox">No image</div>
+                    <div class="preview-info">
+                        <div class="preview-item">
+                            <span class="preview-label">Product Name</span>
+                            <span class="preview-value" id="previewName">Product name</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">SKU</span>
+                            <span class="preview-value" id="previewSKU">SKU</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Price</span>
+                            <span class="preview-value" id="previewPrice">₱0.00</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Stock / Min Level</span>
+                            <span class="preview-value"><span id="previewStock">0</span> / <span id="previewMinStockLevel">10</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Add Product</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Low Stock Alert -->
+        {% if low_stock_items %}
+        <div class="card">
+            <div class="alert alert-warning">
+                <strong>Low Stock Alert!</strong> The following items are running low:
+                <ul>
+                    {% for item in low_stock_items %}
+                    <li><strong>{{ item.name }}</strong> (Stock: {{ item.stock }} | Min: {% if item.min_level %}{{ item.min_level }}{% else %}{{ item.min_stock_level }}{% endif %})
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="card">
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-success{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Products List -->
+        <div class="card">
+            <div class="controls-bar">
+                <h2 style="margin: 0; font-size: 20px;">Products ({{ products|length }})</h2>
+                <div style="display: flex; gap: 12px;">
+                    <!-- Restock Form -->
+                    <form class="restock-form" method="POST" onsubmit="event.preventDefault(); handleRestockSubmit(this);">
+                        {% csrf_token %}
+                        <select name="product_id" id="restockSelect" required>
+                            <option value="">Select product to restock</option>
+                            {% for product in products %}
+                              <option value="{{ product.id }}">{{ product.name }} (Stock: {{ product.stock }})</option>
+                            {% endfor %}
+                        </select>
+                        <input type="number" name="restock_amount" min="1" placeholder="Qty" required />
+                        <button type="submit" class="btn btn-success">Restock</button>
+                    </form>
+
+                    <!-- Export & Refresh -->
+                    <form method="GET" action="{% url 'inventory:export_inventory_to_excel' %}" style="margin: 0;">
+                        <button type="submit" class="btn btn-warning">Export Excel</button>
+                    </form>
+                    <form method="GET" action="{% url 'inventory:list' %}" style="margin: 0;">
+                        <button type="submit" class="btn">Refresh</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Products Table -->
+            {% if products %}
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Min Level</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr data-id="{{ product.id }}" data-minstocklevel="{{ product.min_stock_level }}">
+                            <td><strong>{{ product.sku }}</strong></td>
+                            <td>{{ product.name }}</td>
+                            <td>{{ product.category|default:"Uncategorized" }}</td>
+                            <td>₱{{ product.price }}</td>
+                            <td><strong>{{ product.stock }}</strong></td>
+                            <td>{{ product.min_stock_level }}</td>
+                            <td>
+                                {% if product.stock < product.min_stock_level %}
+                                    <span class="badge badge-stock-low">LOW</span>
+                                {% else %}
+                                    <span class="badge badge-stock-good">OK</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="action-btn action-btn-edit edit-btn" data-id="{{ product.id }}">Edit</button>
+                                {% if user.is_superuser or user.is_staff %}
+                                    <a href="{% url 'inventory:delete_product' product.id %}" class="action-btn action-btn-delete">Delete</a>
+                                {% else %}
+                                    <span class="action-btn" style="background: #d1d5db; color: #6b7280; cursor: not-allowed;" title="Admin only">Delete</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p style="font-size: 18px; margin-bottom: 10px;">No products yet</p>
+                <p>Add your first product using the form above to get started!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    {% if user.is_authenticated %}
+    {% include 'account_management/molecules/nav_bar.html' %}
+    {% endif %}
+
+    <script>
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Color swatches
+        const defaultColors = ['#fef3c7', '#dbeafe', '#fce7f3', '#d1fae5', '#e0f2f1'];
+        const colorGrid = document.getElementById('colorGrid');
+        const customColor = document.getElementById('customColor');
+        let selectedColor = customColor.value;
+
+        defaultColors.forEach(color => {
+            const swatch = document.createElement('div');
+            swatch.className = 'color-swatch' + (color === selectedColor ? ' selected' : '');
+            swatch.style.backgroundColor = color;
+            swatch.onclick = () => {
+                document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+                swatch.classList.add('selected');
+                selectedColor = color;
+                customColor.value = color;
+                updatePreview();
+            };
+            colorGrid.appendChild(swatch);
+        });
+
+        // SKU Generation
+        function generateSKU() {
+            const name = document.getElementById('pname').value.slice(0, 3).toUpperCase();
+            const rand = Math.floor(10000 + Math.random() * 90000);
+            return `${name}-${rand}`;
+        }
+
+        // Preview Update
+        function updatePreview() {
+            document.getElementById('previewName').textContent = document.getElementById('pname').value || 'Product name';
+            document.getElementById('previewSKU').textContent = document.getElementById('psku').value || 'SKU';
+            document.getElementById('previewPrice').textContent = '₱' + (parseFloat(document.getElementById('pprice').value) || 0).toFixed(2);
+            document.getElementById('previewStock').textContent = document.getElementById('pstock').value || 0;
+            document.getElementById('previewMinStockLevel').textContent = document.getElementById('pminstocklevel').value || 10;
+            document.getElementById('productPreview').style.backgroundColor = selectedColor;
+        }
+
+        // Image Preview
+        document.getElementById('pimg').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    document.getElementById('previewBox').innerHTML = `<img src="${event.target.result}" alt="Preview">`;
+                    // clear any selected existing image
+                    const sel = document.getElementById('selected_image'); if (sel) sel.value = '';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Existing images selection
+        document.querySelectorAll('.existing-thumb').forEach(el => {
+            el.addEventListener('click', function(){
+                // mark selected style
+                document.querySelectorAll('.existing-thumb').forEach(x => x.style.borderColor = 'transparent');
+                this.style.borderColor = '#667eea';
+                const url = this.dataset.url;
+                const path = this.dataset.path;
+                // set preview
+                document.getElementById('previewBox').innerHTML = `<img src="${url}" alt="Selected">`;
+                // set hidden input
+                const sel = document.getElementById('selected_image'); if (sel) sel.value = path;
+                // clear file input
+                const fileInput = document.getElementById('pimg'); if (fileInput) fileInput.value = '';
+            });
+        });
+
+        // Event Listeners
+        document.getElementById('pname').addEventListener('input', () => {
+            if (!document.getElementById('psku').value) {
+                document.getElementById('psku').value = generateSKU();
+            }
+            updatePreview();
+        });
+        document.getElementById('pprice').addEventListener('input', updatePreview);
+        document.getElementById('pstock').addEventListener('input', updatePreview);
+        document.getElementById('pminstocklevel').addEventListener('input', updatePreview);
+
+        // Category sync
+        document.getElementById('pcategory').addEventListener('change', () => {
+            if (document.getElementById('pcategory').value) {
+                document.getElementById('categoryInput').value = '';
+            }
+        });
+        document.getElementById('categoryInput').addEventListener('input', () => {
+            if (document.getElementById('categoryInput').value.trim()) {
+                document.getElementById('pcategory').value = '';
+            }
+        });
+
+        // Restock handler
+        function handleRestockSubmit(form) {
+            const productId = document.getElementById('restockSelect').value;
+            const qty = form.querySelector('input[name="restock_amount"]').value;
+            if (!productId || !qty) {
+                showToast('Please select product and quantity', 'error');
+                return;
+            }
+            const csrf = document.querySelector('[name="csrfmiddlewaretoken"]').value;
+            fetch(`/inventory/restock/${productId}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ restock_amount: parseInt(qty) })
+            })
+            .then(r => r.json())
+            .then(() => { showToast('Product restocked!'); location.reload(); })
+            .catch(e => showToast('Error: ' + e, 'error'));
+        }
+
+        // Edit product handler
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const productId = this.getAttribute('data-id');
+                window.location.href = `/inventory/update/${productId}/`;
+            });
+        });
+
+        updatePreview();
+    </script>
+</body>
+</html>

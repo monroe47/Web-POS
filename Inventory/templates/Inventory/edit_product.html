@@ -1,0 +1,507 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Product - {{ product.name }}</title>
+    <link rel="stylesheet" href="{% static 'Inventory/Inventory.css' %}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin: 0;
+        }
+
+        .back-btn {
+            padding: 10px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: #5568d3;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .form-section h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background: #dcfce7;
+            border-color: #10b981;
+            color: #166534;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .product-info {
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .info-value {
+            color: #333;
+        }
+
+        .nav_container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            z-index: 1000;
+        }
+
+        .nav_container input { display: none; }
+
+        .nav_toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            transition: background 0.3s ease;
+            border: none;
+        }
+        .nav_toggle:hover { background: #0056b3; }
+        .nav_container input:checked ~ .nav_toggle { background: #e74c3c; }
+
+        .nav_toggle::before, .nav_toggle::after, .nav_toggle span {
+            content: '';
+            position: absolute;
+            width: 25px;
+            height: 3px;
+            background: white;
+            border-radius: 2px;
+            transition: 0.3s ease;
+        }
+        .nav_toggle::before { transform: translateY(-7px); }
+        .nav_toggle::after { transform: translateY(7px); }
+        .nav_container input:checked ~ .nav_toggle::before { transform: rotate(45deg); top: 23px; }
+        .nav_container input:checked ~ .nav_toggle::after { transform: rotate(-45deg); top: 23px; }
+        .nav_container input:checked ~ .nav_toggle span { transform: scaleX(0); }
+
+        .nav_menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 220px;
+            background: #2c3e50;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            transform: translateX(-100%);
+            transition: transform 0.4s ease-out;
+            padding-top: 80px;
+            display: flex;
+            flex-direction: column;
+        }
+        .nav_container input:checked ~ .nav_menu { transform: translateX(0); }
+
+        .nav_link {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: white;
+            font-size: 1rem;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0.8;
+            transition: background 0.2s ease, opacity 0.2s ease;
+        }
+        .nav_link:hover {
+            background: #34495e;
+            opacity: 1;
+        }
+        .nav_link .nav_icon {
+            margin-right: 15px;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Edit Product</h1>
+            <a href="{% url 'inventory:list' %}" class="back-btn">Back to Inventory</a>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="card">
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-success{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Product Info Display -->
+        <div class="card">
+            <div class="product-info">
+                <div class="info-row">
+                    <span class="info-label">SKU:</span>
+                    <span class="info-value">{{ product.sku }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Created:</span>
+                    <span class="info-value">{{ product.created_at|date:"M d, Y" }}</span>
+                </div>
+                {% if product.image %}
+                <div class="info-row" style="align-items: center;">
+                    <span class="info-label">Current Image:</span>
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width: 50px; height: 50px; border-radius: 4px; object-fit: cover;">
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Edit Form -->
+        <div class="card form-section">
+            <h2>Edit Product Details</h2>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" id="selected_image" name="selected_image" value="" />
+
+                <!-- Product Info Row -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pname">Product Name *</label>
+                        <input id="pname" name="name" type="text" value="{{ product.name }}" required />
+                    </div>
+                </div>
+
+                <!-- Price & Stock Row -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pprice">Price (PHP) *</label>
+                        <input id="pprice" name="price" type="number" min="0" step="0.01" value="{{ product.price }}" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="pstock">Stock Quantity *</label>
+                        <input id="pstock" name="stock" type="number" min="0" value="{{ product.stock }}" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="pminstocklevel">Min Stock Level *</label>
+                        <input id="pminstocklevel" name="min_stock_level" type="number" min="0" value="{{ product.min_stock_level }}" required />
+                    </div>
+                </div>
+
+                <!-- Category Row -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pcategory">Category</label>
+                        <select id="pcategory" name="category">
+                            <option value="{{ product.category }}">{{ product.category }}</option>
+                            {% for category in categories %}
+                                {% if category != product.category %}
+                                    <option value="{{ category }}">{{ category }}</option>
+                                {% endif %}
+                            {% endfor %}
+                            <option value="">-- Select New Category --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="btn-group">
+                    <a href="{% url 'inventory:list' %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Image replace toggle and preview logic
+        document.addEventListener('DOMContentLoaded', function(){
+            // Create DOM elements for replace image controls
+            const form = document.querySelector('form[enctype="multipart/form-data"]');
+            if (!form) return;
+
+            // Insert replace image controls before the buttons
+            const btnGroup = document.querySelector('.btn-group');
+            const replaceWrapper = document.createElement('div');
+            replaceWrapper.className = 'card';
+            replaceWrapper.style.marginTop = '16px';
+            replaceWrapper.style.padding = '12px';
+
+            replaceWrapper.innerHTML = `
+                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                    <div>
+                        <label style="font-weight:600;display:block;margin-bottom:8px;">Product Image</label>
+                        <div id="current-image-container">
+                            {% if product.image %}
+                                <img id="current-image" src="{{ product.image.url }}" alt="{{ product.name }}" style="max-width:180px;max-height:180px;border-radius:6px;object-fit:cover;display:block;" />
+                            {% else %}
+                                <div id="current-image" style="width:180px;height:120px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#6b7280;">No image</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div style="flex:1;min-width:220px;">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+                            <input id="replace-image-checkbox" type="checkbox" name="replace_image" style="transform:scale(1.15);margin-right:6px;" /> Replace / Remove Image
+                        </label>
+                        <div id="replace-controls" style="margin-top:12px;display:none;">
+                            <input id="image-input" type="file" name="image" accept="image/*" />
+                            <div style="margin-top:8px;color:#6b7280;font-size:13px;">If you check Replace and don't choose a file, the current image will be removed.</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            btnGroup.parentNode.insertBefore(replaceWrapper, btnGroup);
+
+            const checkbox = document.getElementById('replace-image-checkbox');
+            const replaceControls = document.getElementById('replace-controls');
+            const imageInput = document.getElementById('image-input');
+            const currentImage = document.getElementById('current-image');
+
+            checkbox.addEventListener('change', function(){
+                if (checkbox.checked) {
+                    replaceControls.style.display = 'block';
+                } else {
+                    replaceControls.style.display = 'none';
+                    // Reset file input and preview back to current image
+                    if (imageInput) imageInput.value = '';
+                    // If currentImage is an img tag, restore src from data attribute
+                    if (currentImage && currentImage.tagName === 'IMG' && currentImage.dataset.origSrc) {
+                        currentImage.src = currentImage.dataset.origSrc;
+                    }
+                }
+            });
+
+            if (currentImage && currentImage.tagName === 'IMG') {
+                // store original src for revert
+                currentImage.dataset.origSrc = currentImage.src;
+            }
+
+            if (imageInput) {
+                imageInput.addEventListener('change', function(e){
+                    const file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = function(ev){
+                        if (currentImage) {
+                            if (currentImage.tagName === 'IMG') {
+                                currentImage.src = ev.target.result;
+                            } else {
+                                // replace placeholder div with img
+                                const img = document.createElement('img');
+                                img.id = 'current-image';
+                                img.src = ev.target.result;
+                                img.style.maxWidth = '180px';
+                                img.style.maxHeight = '180px';
+                                img.style.borderRadius = '6px';
+                                img.style.objectFit = 'cover';
+                                const container = document.getElementById('current-image-container');
+                                container.innerHTML = '';
+                                container.appendChild(img);
+                            }
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // Existing images selection (edit page)
+            document.querySelectorAll('.existing-thumb').forEach(el => {
+                el.addEventListener('click', function(){
+                    // mark selected style
+                    document.querySelectorAll('.existing-thumb').forEach(x => x.style.borderColor = 'transparent');
+                    this.style.borderColor = '#667eea';
+                    const url = this.dataset.url;
+                    const path = this.dataset.path;
+                    // set preview
+                    const container = document.getElementById('current-image-container');
+                    if (container) {
+                        container.innerHTML = `<img id="current-image" src="${url}" alt="Selected" style="max-width:180px;max-height:180px;border-radius:6px;object-fit:cover;" />`;
+                    }
+                    // set hidden input
+                    const sel = document.getElementById('selected_image'); if (sel) sel.value = path;
+                    // clear file input
+                    if (imageInput) imageInput.value = '';
+                    // ensure replace checkbox is checked
+                    const cb = document.getElementById('replace-image-checkbox'); if (cb) cb.checked = true; if (cb) cb.dispatchEvent(new Event('change'));
+                });
+            });
+        });
+    </script>
+
+    <!-- Existing images gallery for choosing previously uploaded images -->
+    <div style="max-width:800px;margin:12px auto">
+        <h3 style="color:#333;margin-bottom:8px">Choose from existing images</h3>
+        <div id="existing-images" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;max-height:200px;overflow:auto;padding:8px;border-radius:8px;background:#fff;border:1px solid #e5e7eb;">
+            {% for img in existing_images %}
+                <div class="existing-thumb" style="cursor:pointer;border:2px solid transparent;padding:4px;border-radius:6px;" data-path="{{ img.path }}" data-url="{{ img.url }}">
+                    <img src="{{ img.url }}" alt="{{ img.name }}" style="width:84px;height:84px;object-fit:cover;border-radius:4px;display:block;" />
+                </div>
+            {% empty %}
+                <div style="color:#6b7280;padding:8px">No existing images found.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    {% if user.is_authenticated %}
+    {% include 'account_management/molecules/nav_bar.html' %}
+    {% endif %}
+</body>
+</html>
